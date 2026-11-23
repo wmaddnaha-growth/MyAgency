@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { href, fmtDate, DONE, type ProductSummary, type Config } from './api';
 import { StageDots, StatusBadge, Progress, Empty, STATUS_LABEL } from './ui';
-import { NewProductForm } from './Edit';
+import { NewProductWizard, WaitingBanner } from './Autopilot';
+import { usePipelines, type Pipeline } from './api';
 
 type Data = { products: ProductSummary[]; unregisteredSources: { folder: string; suggestedName: string; suggestedSlug: string }[] };
 
@@ -15,6 +16,7 @@ export function Home({ data, config }: { data: Data; config: Config }) {
   const [type, setType] = useState<string>('all');
   const [q, setQ] = useState('');
   const [creating, setCreating] = useState(false);
+  const pipes = usePipelines();
   const [sort, setSort] = useState<'name' | 'progress' | 'updated'>(() => readPref('sort', 'updated'));
 
   const all = data.products;
@@ -50,6 +52,7 @@ export function Home({ data, config }: { data: Data; config: Config }) {
         <Stat label="مصادر غير مسجلة" value={data.unregisteredSources.length} sub="فولدرات في Books/ من غير كامبين" tone={data.unregisteredSources.length ? 'warn' : undefined} />
       </section>
 
+      <WaitingBanner />
       <section className="toolbar">
         <input className="input" placeholder="فلترة بالاسم…" value={q} onChange={e => setQ(e.target.value)} />
         <select className="input" value={status} onChange={e => setStatus(e.target.value)} aria-label="الحالة">
@@ -79,12 +82,12 @@ export function Home({ data, config }: { data: Data; config: Config }) {
         </div>
       </section>
 
-      {creating && <div className="mb"><NewProductForm config={config} series={seriesList} onClose={() => setCreating(false)} /></div>}
+      {creating && <div className="mb"><NewProductWizard config={config} series={seriesList} onClose={() => setCreating(false)} /></div>}
       {!list.length && <Empty>مفيش منتجات بالفلتر ده.</Empty>}
 
       {view === 'cards' ? (
         <section className="grid">
-          {list.map(p => <ProductCard key={p.slug} p={p} />)}
+          {list.map(p => <ProductCard key={p.slug} p={p} pipe={(pipes || []).find(x => x.slug === p.slug && ['running', 'waiting', 'paused'].includes(x.status))} />)}
         </section>
       ) : (
         <section className="table-wrap">
@@ -136,7 +139,7 @@ export function Legend() {
   );
 }
 
-function ProductCard({ p }: { p: ProductSummary }) {
+function ProductCard({ p, pipe }: { p: ProductSummary; pipe?: Pipeline }) {
   const color = p.brand?.hex || 'var(--ink-mute)';
   const go = (tab: string) => { location.hash = href({ page: 'product', slug: p.slug, tab }); };
   const pending = p.stages.filter(s => !DONE.includes(s.status));
@@ -148,6 +151,7 @@ function ProductCard({ p }: { p: ProductSummary }) {
           <h2><a className="stretch" href={href({ page: 'product', slug: p.slug, tab: 'overview' })}>{p.name}</a></h2>
           <span className={`pill ps-${p.status}`}>{({ active: 'شغال', paused: 'متوقف', archived: 'مؤرشف', planned: 'مخطط' } as Record<string, string>)[p.status] || p.status}</span>
         </div>
+        {pipe && <div className={`pcard-ap ps-${pipe.status}`}>{pipe.status === 'running' ? <><span className="spinner" /> شغال أوتوماتيك</> : pipe.status === 'waiting' ? '🤔 محتاج قرارك' : '⏸ متوقف مؤقتًا'}</div>}
         <div className="pcard-meta muted">
           {p.typeLabel}{p.series ? ` · سلسلة ${p.series}` : ''}{p.brand?.token ? ` · ${p.brand.token}` : ' · من غير لون'}
         </div>

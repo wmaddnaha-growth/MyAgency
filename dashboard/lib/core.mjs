@@ -338,3 +338,13 @@ export function search(q, config = loadConfig(), limit = 60) {
   }
   return out;
 }
+
+// الأيام اللي لسه ناقصها شغل في مرحلة بتشتغل بالأيام (نفس منطق الواجهة)
+export const REEL_FORMAT = /ريل|reel|فيديو/i;
+export function missingDays(full, stageId) {
+  const days = full.calendar?.days || [];
+  if (stageId === 'copy') return days.filter(d => !d.copy).map(d => d.day);
+  if (stageId === 'visuals') return days.filter(d => d.copy && !d.visuals.length).map(d => d.day);
+  if (stageId === 'reels') return days.filter(d => REEL_FORMAT.test(d.row.format || '') && d.copy && !d.reels.length).map(d => d.day);
+  return [];
+}

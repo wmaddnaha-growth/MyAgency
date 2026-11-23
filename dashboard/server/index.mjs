@@ -6,6 +6,7 @@ import path from 'node:path';
 import { ROOT, loadConfig, allProducts, getProduct, search } from '../lib/core.mjs';
 import { handleWrite } from './write-routes.mjs';
 import { setJobListener, listJobs, getJob, createJob, cancelJob, cliStatus } from '../lib/jobs.mjs';
+import { setPipelineListener, getPipeline, listPipelines, startPipeline, control } from '../lib/pipeline.mjs';
 
 const PORT = Number(process.env.PORT || 5178);
 const DIST = path.join(ROOT, 'dashboard', 'web', 'dist');
@@ -109,6 +110,11 @@ setJobListener(ev => {
   for (const c of clients) c.write(msg);
 });
 
+setPipelineListener(ev => {
+  const msg = `event: pipeline\ndata: ${JSON.stringify(ev)}\n\n`;
+  for (const c of clients) c.write(msg);
+});
+
 async function readJson(req) {
   const chunks = []; for await (const c of req) chunks.push(c);
   try { return chunks.length ? JSON.parse(Buffer.concat(chunks).toString('utf8')) : {}; } catch { const e = new Error('JSON غير صالح'); e.status = 400; throw e; }
@@ -122,6 +128,11 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const p = decodeURIComponent(url.pathname);
   try {
+    if (p === '/api/pipelines' && req.method === 'GET') return json(res, 200, listPipelines());
+    let pm;
+    if ((pm = p.match(/^\/api\/pipelines\/([^/]+)$/)) && req.method === 'GET') return json(res, 200, getPipeline(pm[1]));
+    if ((pm = p.match(/^\/api\/pipelines\/([^/]+)\/start$/)) && req.method === 'POST') { guardPost(req); return json(res, 200, startPipeline(pm[1], await readJson(req))); }
+    if ((pm = p.match(/^\/api\/pipelines\/([^/]+)\/(pause|resume|continue|approve-stage|fix-again|skip-stage|cancel)$/)) && req.method === 'POST') { guardPost(req); return json(res, 200, await control(pm[1], pm[2], await readJson(req))); }
     if (p === '/api/runner') return json(res, 200, { cli: await cliStatus(url.searchParams.has('refresh')), runner: loadConfig().runner || {} });
     if (p === '/api/jobs' && req.method === 'GET') return json(res, 200, listJobs({ slug: url.searchParams.get('slug') || undefined }));
     if (p === '/api/jobs' && req.method === 'POST') { guardPost(req); return json(res, 200, createJob(await readJson(req))); }

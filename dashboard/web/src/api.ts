@@ -24,6 +24,7 @@ export type ProductFull = ProductSummary & {
   calendar: { headers: string[]; days: Day[] } | null;
 };
 export type Config = {
+  autopilot?: AutopilotCfg;
   productStatuses: Record<string, string>;
   productTypes: Record<string, { label: string; stages: string[] }>;
   stageStatuses: { auto: Record<string, string>; manual: Record<string, string> };
@@ -58,7 +59,20 @@ export type Job = {
 export type LogEv = { t: number; kind: string; text: string; name?: string };
 export type RunnerInfo = { cli: { installed: boolean; loggedIn: boolean; authMethod?: string; error?: string }; runner: { maxConcurrent?: number; budgetUsd?: number; autoQa?: boolean; model?: string | null } };
 
+export type PlanItem = { stage: string; label: string; pause: boolean; gateApproved: boolean; state: 'pending' | 'running' | 'gate' | 'done' | 'skipped'; rounds: number; batches: number; note: string };
+export type Pipeline = {
+  slug: string; name: string; status: 'running' | 'waiting' | 'paused' | 'done' | 'cancelled'; createdAt: number; updatedAt: number;
+  plan: PlanItem[]; current: { stage: string; phase: string; jobId: string; days: string } | null;
+  waiting: { type: 'gate' | 'decision' | 'error' | 'budget'; stage?: string; message: string; jobId?: string; days?: string; at: number } | null;
+  spent: number; maxUsd: number; events: { t: number; kind: string; text: string }[];
+};
+export type AutopilotCfg = { batchDays: number; maxFixRounds: number; maxTotalUsd: number; defaultPreset: string; presets: Record<string, { label: string; stages: string[] }> };
+
 export const api = {
+  pipelines: () => getJson<Pipeline[]>('/api/pipelines'),
+  pipeline: (slug: string) => getJson<Pipeline | null>(`/api/pipelines/${encodeURIComponent(slug)}`),
+  startPipeline: (slug: string, body: { stages: string[]; pauseBefore: string[] }) => post<Pipeline>(`/api/pipelines/${encodeURIComponent(slug)}/start`, body),
+  pipelineCmd: (slug: string, cmd: string, body: Record<string, unknown> = {}) => post<Pipeline>(`/api/pipelines/${encodeURIComponent(slug)}/${cmd}`, body),
   runner: (refresh = false) => getJson<RunnerInfo>('/api/runner' + (refresh ? '?refresh' : '')),
   jobs: (slug?: string) => getJson<Job[]>('/api/jobs' + (slug ? `?slug=${encodeURIComponent(slug)}` : '')),
   job: (id: string) => getJson<Job & { log: LogEv[] }>(`/api/jobs/${id}`),
@@ -113,9 +127,9 @@ function ensureEvents() {
   if (es) return;
   es = new EventSource('/api/events');
   es.addEventListener('change', () => { version++; listeners.forEach(l => l(version)); });
-  for (const name of ['job', 'log']) es.addEventListener(name, e => { const d = JSON.parse((e as MessageEvent).data); evListeners.get(name)?.forEach(f => f(d)); });
+  for (const name of ['job', 'log', 'pipeline']) es.addEventListener(name, e => { const d = JSON.parse((e as MessageEvent).data); evListeners.get(name)?.forEach(f => f(d)); });
 }
-export function useServerEvent(name: 'job' | 'log', cb: (d: any) => void) {
+export function useServerEvent(name: 'job' | 'log' | 'pipeline', cb: (d: any) => void) {
   const ref = useRef(cb); ref.current = cb;
   useEffect(() => {
     ensureEvents();
@@ -193,3 +207,16 @@ export const DONE = ['done', 'approved', 'skipped'];
 export const fmtDur = (ms: number) => { const s = Math.round(ms / 1000); return s < 60 ? `${s} ث` : `${Math.floor(s / 60)} د ${s % 60} ث`; };
 export const JOB_STATUS: Record<string, string> = { queued: 'في الطابور', running: 'شغالة', done: 'خلصت', failed: 'فشلت', cancelled: 'اتلغت', interrupted: 'اتقطعت' };
 export const JOB_ACTION: Record<string, string> = { run: 'تشغيل', fix: 'تعديل حسب الملاحظات', qa: 'مراجعة QA' };
+
+export function usePipelines() {
+  const [list, setList] = useState<Pipeline[] | null>(null);
+  useEffect(() => { api.pipelines().then(setList).catch(() => setList([])); }, []);
+  useServerEvent('pipeline', ({ pipeline }: { pipeline: Pipeline }) => setList(l => [pipeline, ...(l || []).filter(x => x.slug !== pipeline.slug)]));
+  return list;
+}
+export function usePipeline(slug: string) {
+  const [p, setP] = useState<Pipeline | null | undefined>(undefined);
+  useEffect(() => { setP(undefined); api.pipeline(slug).then(setP).catch(() => setP(null)); }, [slug]);
+  useServerEvent('pipeline', ({ pipeline }: { pipeline: Pipeline }) => { if (pipeline.slug === slug) setP(pipeline); });
+  return p;
+}

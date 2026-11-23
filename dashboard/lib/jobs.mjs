@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { spawn, execFile } from 'node:child_process';
-import { ROOT, loadConfig, discover, buildProduct, walk } from './core.mjs';
+import { ROOT, loadConfig, discover, buildProduct, walk, missingDays } from './core.mjs';
 import { commitPaths } from './git.mjs';
 import { setStageStatus, readProductJson, httpErr } from './write.mjs';
 
@@ -15,6 +15,8 @@ const CLAUDE_BIN = process.env.CLAUDE_BIN || 'claude';
 const jobs = new Map(); // id -> job
 const procs = new Map(); // id -> child
 let onEvent = () => {};
+const finishListeners = new Set();
+export function onJobFinished(fn) { finishListeners.add(fn); }
 export function setJobListener(fn) { onEvent = fn; }
 
 // ---------- تخزين ----------
@@ -117,7 +119,7 @@ function reviewNotes(p, stage) {
   return out;
 }
 
-function buildJob({ slug, stage: stageId, action = 'run', days, extra = '', parentId = null, message = '' }) {
+function buildJob({ slug, stage: stageId, action = 'run', days, extra = '', parentId = null, message = '', pipeline = false }) {
   if (action === 'followup') { const par = jobs.get(parentId); if (!par) throw httpErr(404, 'المهمة الأصلية مش موجودة'); slug = par.slug; stageId = par.stage; }
   const cfg = loadConfig();
   const runner = cfg.runner || {};
@@ -127,14 +129,16 @@ function buildJob({ slug, stage: stageId, action = 'run', days, extra = '', pare
   const p = buildProduct(base, cfg, { full: true });
   const stage = cfg.stages.find(s => s.id === stageId);
   if (!stage) throw httpErr(400, 'مرحلة غير معروفة');
-  const dayList = stage.args === 'days' && action !== 'qa' && action !== 'followup' ? parseDays(days) : [];
+  const dayList = stage.args === 'days' && action !== 'followup' && days ? parseDays(days) : [];
   if (stage.args === 'days' && ['run', 'fix'].includes(action) && !dayList.length) throw httpErr(400, 'حدد الأيام (مثال: 1-5)');
   const vars = { name: p.name, slug: p.slug, source: p.source || '', mainFile: p.mainFile || '', campaign: `campaigns/${p.slug}`, days: dayList.join('، '), label: stage.label, skill: stage.skill };
 
   let prompt, system, tools, skill = stage.skill, resume = null;
   if (action === 'qa') {
     skill = runner.qaSkill || 'content-qa-reviewer';
-    const files = (p.stages.find(s => s.id === stageId)?.files || []).map(f => f.path);
+    let files = (p.stages.find(s => s.id === stageId)?.files || []).map(f => f.path);
+    // QA لدفعة أيام: الملفات بتاعة الأيام دي بس
+    if (dayList.length) files = files.filter(f => dayList.some(d => new RegExp(`day-${d}(?!\\d)`).test(f)));
     prompt = [`استخدم Skill \`${skill}\` وراجع مخرجات مرحلة «${stage.label}» (اتعملت بـ Skill \`${stage.skill}\`).`, context(p, cfg),
       `الملفات اللي محتاجة مراجعة:\n${files.length ? files.map(f => '- ' + f).join('\n') : '- (مفيش ملفات — ده بذاته ملاحظة)'}`,
       extra ? `تعليمات إضافية من المستخدم: ${extra}` : ''].filter(Boolean).join('\n\n');
@@ -170,7 +174,7 @@ function buildJob({ slug, stage: stageId, action = 'run', days, extra = '', pare
     id, slug, productName: p.name, stage: stageId, stageLabel: stage.label, skill, action, days: dayList, extra, parentId, resume,
     prompt, systemPrompt: system, tools, model: runner.model || null,
     budgetUsd: stage.budgetUsd || runner.budgetUsd || 5, permissionMode: action === 'qa' ? 'default' : (runner.permissionMode || 'acceptEdits'),
-    autoQa: action !== 'qa' && !!runner.autoQa,
+    autoQa: !pipeline && action !== 'qa' && !!runner.autoQa, pipeline: !!pipeline,
     status: 'queued', createdAt: Date.now(), startedAt: null, endedAt: null,
     sessionId: null, costUsd: null, turns: null, result: null, verdict: null, changed: [], error: null,
   };
@@ -283,6 +287,12 @@ function qaNote(report) {
   return picked.slice(0, 300);
 }
 
+export function remainingDays(slug, stageId) {
+  const cfg = loadConfig();
+  const base = discover(cfg).products.find(x => x.slug === slug);
+  return base ? missingDays(buildProduct(base, cfg, { full: true }), stageId) : [];
+}
+
 function toText(c) { return typeof c === 'string' ? c : Array.isArray(c) ? c.map(x => x.text || '').join(' ') : JSON.stringify(c); }
 function summarizeInput(name, input = {}) {
   if (input.file_path) return input.file_path.replace(ROOT + '/', '');
@@ -319,7 +329,16 @@ async function finish(j, before, { code, resultEv, stderr, error } = {}) {
     j.verdict = v === '✅' ? 'approved' : v === '❌' ? 'rejected' : v ? 'needs-fix' : null;
     fs.writeFileSync(path.join(DIR, `${j.id}.report.md`), j.result || '');
     const note = qaNote(j.result || '');
-    if (j.verdict) { try { await commitPaths([setStageStatus(j.slug, j.stage, j.verdict, `QA (${j.id}): ${note}`)], `dashboard: QA ${j.slug}/${j.stage} → ${j.verdict}`); } catch { /* */ } }
+    if (j.verdict) {
+      let status = j.verdict, n = `QA (${j.id}): ${note}`;
+      // مرحلة بالأيام: اعتماد دفعة مش معناه إن المرحلة كلها خلصت
+      if (j.days.length) {
+        const left = remainingDays(j.slug, j.stage);
+        n = `QA أيام ${j.days.join(',')} (${j.id}): ${note}`;
+        if (status === 'approved' && left.length) { status = 'in-progress'; n = `أيام ${j.days.join(',')} اتعتمدت · فاضل ${left.length} يوم`; }
+      }
+      try { await commitPaths([setStageStatus(j.slug, j.stage, status, n)], `dashboard: QA ${j.slug}/${j.stage}${j.days.length ? ' days ' + j.days.join(',') : ''} → ${j.verdict}`); } catch { /* */ }
+    }
   }
   if (j.action !== 'qa') {
     // نجحت → مستنية مراجعة. اتلغت/فشلت → المرحلة ترجع لحالتها اللي كانت عليها (السبب ظاهر في صفحة المهمة)
@@ -333,6 +352,8 @@ async function finish(j, before, { code, resultEv, stderr, error } = {}) {
   }
   appendLog(j.id, { kind: j.status === 'done' ? 'done' : 'error', text: j.status === 'done' ? `خلصت · ${j.changed.length} ملف اتغير${j.costUsd != null ? ` · $${j.costUsd.toFixed(3)}` : ''}` : (j.error || j.status) });
   save(j);
+
+  for (const fn of finishListeners) { try { await fn(publicJob(j)); } catch (e) { console.error('finish listener', e); } }
 
   if (j.status === 'done' && j.autoQa && j.action !== 'qa') {
     try { createJob({ slug: j.slug, stage: j.stage, action: 'qa', parentId: j.id }); } catch (e) { appendLog(j.id, { kind: 'error', text: 'QA التلقائي مقدرش يبدأ: ' + e.message }); }

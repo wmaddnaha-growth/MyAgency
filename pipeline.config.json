@@ -249,5 +249,52 @@
       "Skill"
     ],
     "autoQa": true
+  },
+  "autopilot": {
+    "$comment": "الشغل الأوتوماتيك (المرحلة 4): بيمشي على المراحل بالترتيب، كل مرحلة: تشغيل ← QA ← تعديل لحد maxFixRounds ← لو لسه فيه ملاحظات يقف ويستناك. المراحل اللي ليها gate بيقف قبلها يستنى موافقتك.",
+    "batchDays": 5,
+    "maxFixRounds": 2,
+    "maxTotalUsd": 40,
+    "defaultPreset": "organic",
+    "presets": {
+      "foundation": {
+        "label": "الأساس + الأوفر",
+        "stages": [
+          "brand",
+          "research",
+          "bonus",
+          "upsell"
+        ]
+      },
+      "organic": {
+        "label": "المحتوى العضوي كامل",
+        "stages": [
+          "brand",
+          "research",
+          "bonus",
+          "upsell",
+          "calendar",
+          "copy",
+          "visuals",
+          "reels"
+        ]
+      },
+      "full": {
+        "label": "كل حاجة (بما فيها البيع والإعلانات)",
+        "stages": [
+          "brand",
+          "research",
+          "bonus",
+          "upsell",
+          "calendar",
+          "copy",
+          "visuals",
+          "reels",
+          "landing",
+          "ads",
+          "performance"
+        ]
+      }
+    }
   }
 }

@@ -431,3 +431,47 @@ details.card summary { margin: 0; }
 details.card .pre { margin-top: 10px; max-height: 40vh; overflow: auto; }
 @media (max-width: 1100px) { .jobgrid { grid-template-columns: 1fr; } }
 @media (max-width: 560px) { .jobs-ind { padding: 3px 8px; } }
+
+/* ======================= المرحلة 4: الشغل الأوتوماتيك ======================= */
+.seg.wrap { flex-wrap: wrap; }
+.chk { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.plan-picker { display: flex; flex-direction: column; gap: 10px; }
+.plan-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 6px; }
+.plan-list li { border: 1px solid var(--line); border-radius: var(--r); padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; background: var(--paper); opacity: .7; }
+.plan-list li.on { opacity: 1; background: var(--card); border-color: color-mix(in srgb, var(--pc) 40%, var(--line)); }
+.autopilot { border-top: 4px solid var(--pc); display: flex; flex-direction: column; gap: 12px; }
+.autopilot.idle { border-top-width: 1px; }
+.ap-idle { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+.ap-idle h3 { margin-bottom: 4px; }
+.ap-idle p { margin: 0; max-width: 620px; }
+.pstat { font-size: 12px; font-weight: 500; padding: 2px 10px; border-radius: 999px; margin-inline-start: 8px; display: inline-flex; gap: 6px; align-items: center; background: var(--paper-3); color: var(--ink-mute); }
+.pstat.ps-running { background: #EAF0F8; color: var(--info); }
+.pstat.ps-waiting { background: #FBEFD5; color: var(--warning); }
+.pstat.ps-done { background: #E3F2E8; color: var(--success); }
+.ap-plan { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.ap-plan li { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 999px; padding: 3px 12px 3px 10px; font-size: 13px; background: var(--paper); }
+.ap-dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid #C9BBA5; flex: none; }
+.aps-done .ap-dot { background: var(--success); border-color: var(--success); }
+.aps-running .ap-dot, .ap-plan li.cur .ap-dot { background: var(--info); border-color: var(--info); animation: pulse 1.4s ease-in-out infinite; }
+.aps-gate .ap-dot { background: var(--gold); border-color: var(--gold); }
+.aps-skipped { opacity: .55; text-decoration: line-through; }
+.ap-plan li.cur { border-color: var(--info); background: #EAF0F8; }
+@keyframes pulse { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .aps-running .ap-dot, .ap-plan li.cur .ap-dot { animation: none; } }
+.ap-wait { border-radius: var(--r); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; background: #FFF7E6; border: 1px solid #E7C98F; }
+.ap-wait p { margin: 0; }
+.aw-error { background: #FBEAE6; border-color: #E9B8AD; }
+.aw-gate { background: #F6F0E2; border-color: var(--gold-light); }
+.ap-foot { display: flex; align-items: center; gap: 10px; }
+.ap-foot .progress { max-width: 240px; }
+.ap-events { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 13px; max-height: 260px; overflow-y: auto; }
+.ae-done { color: var(--success); } .ae-error { color: var(--danger); } .ae-wait { color: var(--warning); }
+.ap-banner { border-inline-start: 4px solid var(--gold); margin-bottom: 18px; }
+.ap-banner ul { margin: 0 0 6px; padding-inline-start: 20px; display: flex; flex-direction: column; gap: 4px; }
+.pcard-ap { font-size: 12px; align-self: flex-start; padding: 2px 10px; border-radius: 999px; display: inline-flex; gap: 6px; align-items: center; background: #EAF0F8; color: var(--info); }
+.pcard-ap.ps-waiting { background: #FBEFD5; color: var(--warning); }
+.uploader.big { padding: 16px; }
+.wz-files { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.wz-files li { display: flex; align-items: center; gap: 10px; font-size: 13px; flex-wrap: wrap; }
+.wz-files .chk { min-width: 120px; }
+.wz-auto { display: flex; flex-direction: column; gap: 10px; padding-top: 10px; border-top: 1px solid var(--paper-3); }

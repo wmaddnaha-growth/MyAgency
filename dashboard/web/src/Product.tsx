@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { href, fileUrl, fmtDate, DONE, useLiveVersion, api, type ProductFull, type Stage, type FileInfo, type Day, type Config } from './api';
 import { ProductCtx, StageStatusEditor, Uploader, NewFileButton, MetaEditor, toast } from './Edit';
 import { RunPanel, ProductJobs } from './Jobs';
+import { AutopilotPanel } from './Autopilot';
 import { StatusBadge, FileViewer, FileList, Empty, Progress, STATUS_LABEL, KIND_LABEL } from './ui';
 
 type Props = { p: ProductFull; tab: string; file?: string; config: Config };
@@ -111,6 +112,7 @@ function Overview({ p, go, config }: { p: ProductFull; go: (t: string, f?: strin
   const partial = p.stages.filter(s => s.status === 'partial');
   return (
     <div className="stack">
+      <AutopilotPanel p={p} config={config} />
       {editing && <MetaEditor p={p} config={config} onClose={() => setEditing(false)} />}
       {p.warnings.length > 0 && (
         <div className="card notice">
