@@ -3,6 +3,8 @@ import { href, fileUrl, fmtDate, DONE, useLiveVersion, api, type ProductFull, ty
 import { ProductCtx, StageStatusEditor, Uploader, NewFileButton, MetaEditor, toast } from './Edit';
 import { RunPanel, ProductJobs } from './Jobs';
 import { AutopilotPanel } from './Autopilot';
+import { ProductResults } from './Results';
+import { ProductTasks, StageOwner } from './Tasks';
 import { StatusBadge, FileViewer, FileList, Empty, Progress, STATUS_LABEL, KIND_LABEL } from './ui';
 
 type Props = { p: ProductFull; tab: string; file?: string; config: Config };
@@ -66,6 +68,7 @@ export function Product({ p, tab, file, config }: Props) {
           ))}
           <div className="side-group">
             <div className="side-h">تاني</div>
+            <SideLink on={tab === 'results'} onClick={() => go('results')}>النتايج والمبيعات</SideLink>
             <SideLink on={tab === 'other'} onClick={() => go('other')} count={p.otherFiles.length}>ملفات مش متصنفة</SideLink>
             <SideLink on={tab === 'all'} onClick={() => go('all')} count={p.files.length}>كل ملفات الكامبين</SideLink>
           </div>
@@ -78,8 +81,9 @@ export function Product({ p, tab, file, config }: Props) {
           {tab === 'other' && <FilesPane title="ملفات مش متصنفة" subtitle="ملفات في الكامبين مش تبع أي مرحلة في pipeline.config.json" files={p.otherFiles} file={file} base={`campaigns/${p.slug}`} onOpen={f => go('other', f)} onClear={() => go('other')} />}
           {tab === 'all' && <FilesPane title="كل ملفات الكامبين" subtitle={`campaigns/${p.slug}/`} files={p.files} file={file} base={`campaigns/${p.slug}`} onOpen={f => go('all', f)} onClear={() => go('all')}
             tools={<Uploader dir={`campaigns/${p.slug}`} subdirs={subdirsOf(p.files)} />} />}
+          {tab === 'results' && <ProductResults slug={p.slug} csvPath={f => go('all', f)} />}
           {stage && <StageView p={p} s={stage} file={file} go={go} />}
-          {!stage && !['overview', 'source', 'other', 'all'].includes(tab) && <Empty>التاب ده مش موجود.</Empty>}
+          {!stage && !['overview', 'source', 'other', 'all', 'results'].includes(tab) && <Empty>التاب ده مش موجود.</Empty>}
         </main>
       </div>
     </div>
@@ -138,6 +142,7 @@ function Overview({ p, go, config }: { p: ProductFull; go: (t: string, f?: strin
             <dt>ملفات المصدر</dt><dd>{p.sourceFiles.length}</dd>
             <dt>ملفات الكامبين</dt><dd>{p.files.length} {Object.entries(p.counts).map(([k, v]) => <span key={k} className="muted"> · {v} {KIND_LABEL[k] || k}</span>)}</dd>
             <dt>أيام خطة المحتوى</dt><dd>{p.calendarDays || '—'}</dd>
+            <dt>بداية النشر</dt><dd>{p.launchDate ? <a href="#/calendar">{p.launchDate}</a> : <span className="muted">مش محدد — من «تعديل البيانات»</span>}</dd>
             {p.notes && <><dt>ملاحظات</dt><dd>{p.notes}</dd></>}
           </dl>
         </div>
@@ -164,6 +169,7 @@ function Overview({ p, go, config }: { p: ProductFull; go: (t: string, f?: strin
         </table>
       </div>
 
+      <ProductTasks slug={p.slug} stages={p.stages} />
       <ProductJobs slug={p.slug} />
       {partial.length > 0 && (
         <div className="card">
@@ -225,6 +231,7 @@ function StageView({ p, s, file, go }: { p: ProductFull; s: Stage; file?: string
         </div>
         <div className="stage-meta">
           <span>الـ Skill: <code dir="ltr">{s.skill}</code></span>
+          <StageOwner slug={p.slug} stage={s.id} />
           {s.dir && <span>الفولدر: <code>{s.dir}/</code></span>}
           {s.dependsOn.length > 0 && <span>بتعتمد على: {s.dependsOn.map(id => {
             const d = p.stages.find(x => x.id === id);

@@ -356,7 +356,7 @@ export function StageStatusEditor({ slug, s }: { slug: string; s: Stage }) {
 
 // ---------- بيانات المنتج ----------
 export function MetaEditor({ p, config, onClose }: { p: ProductFull; config: Config; onClose: () => void }) {
-  const [f, setF] = useState({ name: p.name, status: p.status, series: p.series || '', type: p.type, mainFile: p.mainFile || '', notes: p.notes || '' });
+  const [f, setF] = useState({ name: p.name, status: p.status, series: p.series || '', type: p.type, mainFile: p.mainFile || '', notes: p.notes || '', launchDate: p.launchDate || '' });
   const [busy, setBusy] = useState(false);
   const up = (k: keyof typeof f) => (e: { target: { value: string } }) => setF(x => ({ ...x, [k]: e.target.value }));
   const docs = p.sourceFiles.filter((x: FileInfo) => ['pdf', 'text'].includes(x.kind) || ['docx', 'epub'].includes(x.ext));
@@ -371,6 +371,7 @@ export function MetaEditor({ p, config, onClose }: { p: ProductFull; config: Con
         <label>الحالة<select className="input" value={f.status} onChange={up('status')}>{Object.entries(config.productStatuses).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></label>
         <label>السلسلة<input className="input" value={f.series} onChange={up('series')} placeholder="من غير" list="series-list" /></label>
         <label>النوع<select className="input" value={f.type} onChange={up('type')}>{Object.entries(config.productTypes).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</select></label>
+        <label>بداية النشر (يوم 1 في الخطة)<input type="date" className="input" value={f.launchDate} onChange={up('launchDate')} /></label>
         <label className="wide">ملف الكتاب الأساسي<select className="input" value={f.mainFile} onChange={up('mainFile')}><option value="">— مش محدد —</option>{docs.map(d => <option key={d.path} value={d.path}>{d.inner}</option>)}</select></label>
         <label className="wide">ملاحظات<textarea className="input" rows={3} value={f.notes} onChange={up('notes')} /></label>
       </div>

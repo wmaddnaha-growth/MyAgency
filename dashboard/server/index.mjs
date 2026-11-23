@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { ROOT, loadConfig, allProducts, getProduct, search } from '../lib/core.mjs';
 import { handleWrite } from './write-routes.mjs';
+import { handleCompany } from './company-routes.mjs';
 import { setJobListener, listJobs, getJob, createJob, cancelJob, cliStatus } from '../lib/jobs.mjs';
 import { setPipelineListener, getPipeline, listPipelines, startPipeline, control } from '../lib/pipeline.mjs';
 
@@ -101,7 +102,7 @@ for (const d of [cfg0.paths.campaigns, cfg0.paths.sources]) {
   watchTree(abs);
 }
 // pipeline.config.json: نراقب الروت نفسه (عشان الاستبدال بـ rename)
-fs.watch(ROOT, (_e, f) => { if (f === 'pipeline.config.json') notify('pipeline.config.json'); });
+fs.watch(ROOT, (_e, f) => { if (['pipeline.config.json', 'company.json'].includes(f)) notify(f); });
 setInterval(() => { for (const c of clients) c.write(': ping\n\n'); }, 25000);
 
 // أحداث المهام (تشغيل الـ Skills) على نفس قناة SSE
@@ -139,6 +140,7 @@ const server = http.createServer(async (req, res) => {
     let jm;
     if ((jm = p.match(/^\/api\/jobs\/([\w-]+)$/)) && req.method === 'GET') { const j = getJob(jm[1]); return j ? json(res, 200, j) : json(res, 404, { error: 'مهمة غير موجودة' }); }
     if ((jm = p.match(/^\/api\/jobs\/([\w-]+)\/cancel$/)) && req.method === 'POST') { guardPost(req); return json(res, 200, cancelJob(jm[1])); }
+    if (p.startsWith('/api/') && await handleCompany(req, res, url, p, json)) return;
     if (p.startsWith('/api/') && await handleWrite(req, res, url, p, json)) return;
     if (p === '/api/config') return json(res, 200, loadConfig());
     if (p === '/api/products') {

@@ -10,6 +10,7 @@ export type Stage = {
 };
 export type Brand = { token: string | null; hex: string | null } | null;
 export type ProductSummary = {
+  launchDate?: string | null; publishing?: Record<string, { status?: string; url?: string; date?: string; note?: string }>;
   slug: string; name: string; type: string; typeLabel: string; status: string; series: string | null;
   source: string | null; mainFile: string | null; created: string | null; notes: string; registered: boolean;
   brand: Brand; stages: Stage[]; doneCount: number; totalStages: number;
@@ -67,6 +68,32 @@ export type Pipeline = {
   spent: number; maxUsd: number; events: { t: number; kind: string; text: string }[];
 };
 export type AutopilotCfg = { batchDays: number; maxFixRounds: number; maxTotalUsd: number; defaultPreset: string; presets: Record<string, { label: string; stages: string[] }> };
+
+export type CalItem = { slug: string; name: string; color: string | null; day: number; week: number | null; date: string; type: string; hook: string; format: string; cta: string; status: string; manual: boolean; url: string; note: string; hasCopy: boolean; visuals: number; reels: number };
+export type Totals = { spend: number; impressions: number; clicks: number; leads: number; orders: number; revenue: number; roas: number | null; cpa: number | null; cpl: number | null; ctr: number | null };
+export type ResultRow = { date: string; channel: string; spend: number; impressions: number; clicks: number; leads: number; orders: number; revenue: number; note: string };
+export type Member = { id: string; name: string; role: string };
+export type Task = { id: string; title: string; assignee: string; due?: string; status: 'todo' | 'doing' | 'done'; stage?: string; file?: string; note?: string; kind?: 'stage'; slug: string; productName: string; color: string | null; stageLabel?: string; stageStatus?: string; createdAt?: string; doneAt?: string };
+
+async function cpost<T = { ok: boolean }>(url: string, body: unknown) { return post<T>(url, body); }
+const pu = (slug: string, what: string) => `/api/products/${encodeURIComponent(slug)}/${what}`;
+export const company = {
+  get: () => getJson<{ currency: string; weekStart: number; team: Member[] }>('/api/company'),
+  save: (patch: Record<string, unknown>) => cpost('/api/company', patch),
+  calendar: () => getJson<{ items: CalItem[]; noDate: { slug: string; name: string; days: number; color: string | null }[]; today: string }>('/api/calendar'),
+  setPublishing: (slug: string, body: { day: number; status?: string; url?: string; date?: string; note?: string }) => cpost(pu(slug, 'publishing'), body),
+  results: (from?: string, to?: string) => getJson<{ currency: string; totals: Totals; products: { slug: string; name: string; color: string | null; status: string; rows: number; totals: Totals; channels: string[] }[]; series: { date: string; spend: number; revenue: number; orders: number; leads: number }[] }>(`/api/results?${new URLSearchParams({ ...(from ? { from } : {}), ...(to ? { to } : {}) })}`),
+  productResults: (slug: string) => getJson<{ currency: string; rows: ResultRow[]; totals: Totals; path: string }>(pu(slug, 'results')),
+  addResults: (slug: string, rows: Partial<ResultRow>[]) => cpost(pu(slug, 'results'), { rows }),
+  importMeta: (slug: string, csv: string, dry: boolean) => cpost<{ mapped: Record<string, string>; rows: ResultRow[]; added?: number }>(pu(slug, 'results-import'), { csv, dry }),
+  tasks: () => getJson<{ team: Member[]; tasks: Task[]; today: string }>('/api/tasks'),
+  productTasks: (slug: string) => getJson<{ tasks: Task[]; owners: Record<string, string> }>(pu(slug, 'tasks')),
+  saveTask: (slug: string, t: Partial<Task>) => cpost(pu(slug, 'tasks'), t),
+  deleteTask: (slug: string, id: string) => cpost(pu(slug, 'tasks-delete'), { id }),
+  setOwner: (slug: string, stage: string, member: string) => cpost(pu(slug, 'owner'), { stage, member }),
+};
+export const fmtMoney = (n: number | null | undefined, cur = 'EGP') => n == null ? '—' : `${Math.round(n).toLocaleString('en-US')} ${cur === 'EGP' ? 'ج.م' : cur}`;
+export const fmtNum = (n: number | null | undefined, d = 0) => n == null ? '—' : n.toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: d });
 
 export const api = {
   pipelines: () => getJson<Pipeline[]>('/api/pipelines'),
@@ -168,7 +195,7 @@ export function useAsync<T>(fn: () => Promise<T>, deps: unknown[]) {
 }
 
 // ---------- Router (hash) ----------
-export type Route = { page: 'home' } | { page: 'product'; slug: string; tab: string; file?: string } | { page: 'search'; q: string } | { page: 'jobs'; id?: string };
+export type Route = { page: 'home' } | { page: 'product'; slug: string; tab: string; file?: string } | { page: 'search'; q: string } | { page: 'jobs'; id?: string } | { page: 'calendar' } | { page: 'results' } | { page: 'tasks' };
 export function parseHash(): Route {
   const h = decodeURIComponent(location.hash.replace(/^#\/?/, ''));
   const [pathPart, query = ''] = h.split('?');
@@ -177,12 +204,16 @@ export function parseHash(): Route {
   if (parts[0] === 'p' && parts[1]) return { page: 'product', slug: parts[1], tab: parts[2] || 'overview', file: qs.get('f') || undefined };
   if (parts[0] === 'search') return { page: 'search', q: qs.get('q') || '' };
   if (parts[0] === 'jobs') return { page: 'jobs', id: parts[1] };
+  if (parts[0] === 'calendar') return { page: 'calendar' };
+  if (parts[0] === 'results') return { page: 'results' };
+  if (parts[0] === 'tasks') return { page: 'tasks' };
   return { page: 'home' };
 }
 export function href(r: Route) {
   if (r.page === 'product') return `#/p/${encodeURIComponent(r.slug)}/${r.tab}${r.file ? `?f=${encodeURIComponent(r.file)}` : ''}`;
   if (r.page === 'search') return `#/search?q=${encodeURIComponent(r.q)}`;
   if (r.page === 'jobs') return r.id ? `#/jobs/${r.id}` : '#/jobs';
+  if (r.page === 'calendar' || r.page === 'results' || r.page === 'tasks') return `#/${r.page}`;
   return '#/';
 }
 export function useRoute() {

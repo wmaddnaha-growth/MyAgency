@@ -48,7 +48,7 @@ description: Review finished marketing deliverables for a book/product (ICP/mark
 
 **صور/تصميم (image prompts / design spec)**
 - الـ prompts بتتبع قاعدة visual-on-text أو text-on-visual بوضوح (مفيش تعارض، مفيش نص عربي متوقع من موديل الصور يرسمه صح).
-- اللون المستخدم يطابق بالضبط `color.product.<اللون>` المسجّل في `campaigns/<الكتاب>/brand.md` — مش لون عشوائي أو من كتاب تاني.
+- اللون المستخدم يطابق بالضبط `color.product.<اللون>` المسجّل في `campaigns/<الكتاب>/brand.md` — مش لون عشوائي أو من كتاب تاني (كتب نفس السلسلة في `product.json` → `series` بتشترك في اللون، وده صح مش تكرار).
 - عدد الصور/السبيك يطابق عدد الأيام/البوستات المطلوبة.
 
 **ريلز (سكريبت/شوت-ليست/فيديو وايت بورد)** — لو موجودة

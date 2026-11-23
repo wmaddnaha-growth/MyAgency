@@ -59,4 +59,6 @@ campaigns/<اسم-الكتاب-أو-المنتج>/
   06-landing-page/  landing-page.md
   07-ads/           ad-copies.md
   08-performance-creative/  performance-creative-machine.md
+  09-results/       results.csv (الصرف والمبيعات)
+  tasks.json        مهام الفريق
 ```

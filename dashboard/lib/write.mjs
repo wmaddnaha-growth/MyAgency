@@ -139,7 +139,7 @@ export function setReview(slug, filePath, status, note) {
   return writeProductJson(slug, p);
 }
 
-const META = ['name', 'status', 'series', 'mainFile', 'notes', 'type', 'source'];
+const META = ['name', 'status', 'series', 'mainFile', 'notes', 'type', 'source', 'launchDate'];
 export function updateMeta(slug, patch) {
   const config = loadConfig();
   const p = readProductJson(slug);
@@ -149,6 +149,7 @@ export function updateMeta(slug, patch) {
   if (p.type && !config.productTypes[p.type]) throw httpErr(400, 'نوع غير معروف');
   if (p.status && !config.productStatuses[p.status]) throw httpErr(400, 'حالة منتج غير معروفة');
   if (p.source) resolveWritable(p.source + '/x');
+  if (p.launchDate && !/^\d{4}-\d{2}-\d{2}$/.test(p.launchDate)) throw httpErr(400, 'تاريخ البداية لازم يكون YYYY-MM-DD');
   if (p.mainFile && !fs.existsSync(path.join(ROOT, p.mainFile))) throw httpErr(400, 'الملف الأساسي مش موجود');
   return writeProductJson(slug, p);
 }

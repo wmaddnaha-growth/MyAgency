@@ -170,6 +170,8 @@ export function discover(config = loadConfig()) {
       notes: meta.notes || '',
       stagesState: meta.stages || {},
       reviews: meta.reviews || {},
+      launchDate: meta.launchDate || null,
+      publishing: meta.publishing || {},
       registered,
       metaError: meta._error || null,
     });
