@@ -1,12 +1,13 @@
-import { useMemo } from 'react';
-import { href, fileUrl, fmtDate, DONE, useLiveVersion, type ProductFull, type Stage, type FileInfo, type Day } from './api';
+import { useMemo, useState } from 'react';
+import { href, fileUrl, fmtDate, DONE, useLiveVersion, api, type ProductFull, type Stage, type FileInfo, type Day, type Config } from './api';
+import { ProductCtx, StageStatusEditor, Uploader, NewFileButton, MetaEditor, toast } from './Edit';
 import { StatusBadge, FileViewer, FileList, Empty, Progress, STATUS_LABEL, KIND_LABEL } from './ui';
 
-type Props = { p: ProductFull; tab: string; file?: string };
+type Props = { p: ProductFull; tab: string; file?: string; config: Config };
 
 const STATUS_PILL: Record<string, string> = { active: 'شغال', paused: 'متوقف', archived: 'مؤرشف', planned: 'مخطط' };
 
-export function Product({ p, tab, file }: Props) {
+export function Product({ p, tab, file, config }: Props) {
   const go = (t: string, f?: string) => { location.hash = href({ page: 'product', slug: p.slug, tab: t, file: f }); };
   const color = p.brand?.hex || '#5A5246';
   const stage = p.stages.find(s => s.id === tab);
@@ -16,7 +17,9 @@ export function Product({ p, tab, file }: Props) {
     return Object.entries(g);
   }, [p.stages]);
 
+  const ctx = useMemo(() => ({ slug: p.slug, reviews: p.reviews || {} }), [p.slug, p.reviews]);
   return (
+    <ProductCtx.Provider value={ctx}>
     <div className="page product" style={{ ['--pc' as string]: color }}>
       <header className="phead">
         <div className="phead-main">
@@ -67,15 +70,18 @@ export function Product({ p, tab, file }: Props) {
         </aside>
 
         <main className="content">
-          {tab === 'overview' && <Overview p={p} go={go} />}
-          {tab === 'source' && <FilesPane title="ملفات الكتاب (المصدر)" subtitle={p.source || 'مفيش فولدر مصدر'} files={sortSource(p.sourceFiles, p.mainFile)} file={file} base={p.source || ''} onOpen={f => go('source', f)} highlight={p.mainFile} />}
-          {tab === 'other' && <FilesPane title="ملفات مش متصنفة" subtitle="ملفات في الكامبين مش تبع أي مرحلة في pipeline.config.json" files={p.otherFiles} file={file} base={`campaigns/${p.slug}`} onOpen={f => go('other', f)} />}
-          {tab === 'all' && <FilesPane title="كل ملفات الكامبين" subtitle={`campaigns/${p.slug}/`} files={p.files} file={file} base={`campaigns/${p.slug}`} onOpen={f => go('all', f)} />}
+          {tab === 'overview' && <Overview p={p} go={go} config={config} />}
+          {tab === 'source' && <FilesPane title="ملفات الكتاب (المصدر)" subtitle={p.source || 'مفيش فولدر مصدر'} files={sortSource(p.sourceFiles, p.mainFile)} file={file} base={p.source || ''} onOpen={f => go('source', f)} onClear={() => go('source')} highlight={p.mainFile}
+            tools={p.source ? <Uploader dir={p.source} subdirs={subdirsOf(p.sourceFiles)} label="ارفع الكتاب أو البونصات" /> : null} />}
+          {tab === 'other' && <FilesPane title="ملفات مش متصنفة" subtitle="ملفات في الكامبين مش تبع أي مرحلة في pipeline.config.json" files={p.otherFiles} file={file} base={`campaigns/${p.slug}`} onOpen={f => go('other', f)} onClear={() => go('other')} />}
+          {tab === 'all' && <FilesPane title="كل ملفات الكامبين" subtitle={`campaigns/${p.slug}/`} files={p.files} file={file} base={`campaigns/${p.slug}`} onOpen={f => go('all', f)} onClear={() => go('all')}
+            tools={<Uploader dir={`campaigns/${p.slug}`} subdirs={subdirsOf(p.files)} />} />}
           {stage && <StageView p={p} s={stage} file={file} go={go} />}
           {!stage && !['overview', 'source', 'other', 'all'].includes(tab) && <Empty>التاب ده مش موجود.</Empty>}
         </main>
       </div>
     </div>
+    </ProductCtx.Provider>
   );
 }
 
@@ -89,16 +95,22 @@ function SideLink({ on, onClick, children, count, status }: { on: boolean; onCli
   );
 }
 
+function subdirsOf(files: FileInfo[]) {
+  return [...new Set(files.map(f => f.inner.split('/').slice(0, -1).join('/')).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ar'));
+}
+
 function sortSource(files: FileInfo[], main: string | null) {
   return [...files].sort((a, b) => (a.path === main ? -1 : b.path === main ? 1 : a.inner.localeCompare(b.inner, 'ar')));
 }
 
 // ---------- Overview ----------
-function Overview({ p, go }: { p: ProductFull; go: (t: string, f?: string) => void }) {
+function Overview({ p, go, config }: { p: ProductFull; go: (t: string, f?: string) => void; config: Config }) {
+  const [editing, setEditing] = useState(false);
   const recent = [...p.files].sort((a, b) => b.mtime - a.mtime).slice(0, 8);
   const partial = p.stages.filter(s => s.status === 'partial');
   return (
     <div className="stack">
+      {editing && <MetaEditor p={p} config={config} onClose={() => setEditing(false)} />}
       {p.warnings.length > 0 && (
         <div className="card notice">
           <h3>محتاج انتباه</h3>
@@ -117,7 +129,7 @@ function Overview({ p, go }: { p: ProductFull; go: (t: string, f?: string) => vo
           ) : <p className="lead">كل المراحل خلصت 🎉</p>}
         </div>
         <div className="card">
-          <h3>ملخص</h3>
+          <div className="card-h"><h3>ملخص</h3>{!editing && <button type="button" className="btn ghost sm" onClick={() => setEditing(true)}>✎ تعديل البيانات</button>}</div>
           <dl className="kv">
             <dt>الملف الأساسي</dt><dd>{p.mainFile ? <button type="button" className="linkish" onClick={() => go('source', p.mainFile!)}>{p.mainFile.split('/').pop()}</button> : <span className="muted">مش محدد</span>}</dd>
             <dt>ملفات المصدر</dt><dd>{p.sourceFiles.length}</dd>
@@ -173,17 +185,18 @@ function Overview({ p, go }: { p: ProductFull; go: (t: string, f?: string) => vo
 }
 
 // ---------- Files pane (list + viewer) ----------
-function FilesPane({ title, subtitle, files, file, onOpen, base, highlight }: { title: string; subtitle?: string; files: FileInfo[]; file?: string; onOpen: (p: string) => void; base: string; highlight?: string | null }) {
+function FilesPane({ title, subtitle, files, file, onOpen, onClear, base, highlight, tools }: { title: string; subtitle?: string; files: FileInfo[]; file?: string; onOpen: (p: string) => void; onClear: () => void; base: string; highlight?: string | null; tools?: React.ReactNode }) {
   const current = files.find(f => f.path === file) || (file ? { path: file } : undefined);
   return (
     <div className="stack">
       <div className="section-h"><h2>{title}</h2>{subtitle && <span className="muted" dir="auto">{subtitle}</span>}</div>
+      {tools}
       <div className="split">
         <div className="split-list">
           <FileList files={files} active={file || highlight || undefined} onOpen={f => onOpen(f.path)} base={base} />
         </div>
         <div className="split-view">
-          {current ? <FileViewer key={current.path} file={current} /> : <Empty>اختار ملف من القايمة عشان تعرضه.</Empty>}
+          {current ? <FileViewer key={current.path} file={current} onDeleted={onClear} /> : <Empty>اختار ملف من القايمة عشان تعرضه.</Empty>}
         </div>
       </div>
     </div>
@@ -216,7 +229,7 @@ function StageView({ p, s, file, go }: { p: ProductFull; s: Stage; file?: string
         </div>
         {s.detail && <p className="muted">{s.detail}</p>}
         {s.gate && <p className="gate">⏸ {s.gate}</p>}
-        {s.manual?.note && <p className="note">ملاحظة: {s.manual.note}</p>}
+        <StageStatusEditor slug={p.slug} s={s} />
         {outputs.length > 0 && (
           <div className="outputs">
             {outputs.map(o => (
@@ -235,13 +248,19 @@ function StageView({ p, s, file, go }: { p: ProductFull; s: Stage; file?: string
       {s.kind === 'collection' && <Collection files={stageFiles} dir={s.dir} />}
 
       {!dayMode && (
+        <div className="tools">
+          <Uploader dir={s.dir ? `${base}/${s.dir}` : base} subdirs={subdirsOf(stageFiles.map(f => ({ ...f, inner: s.dir ? f.inner.slice(s.dir.length + 1) : f.inner })))} />
+          {s.kind !== 'collection' && <NewFileButton dir={s.dir ? `${base}/${s.dir}` : base} onCreated={f => open(f)} />}
+        </div>
+      )}
+      {!dayMode && (
         <div className="split">
           <div className="split-list">
             <div className="list-h">ملفات المرحلة ({stageFiles.length})</div>
             <FileList files={stageFiles} active={autoFile} onOpen={f => open(f.path)} base={`${base}/${s.dir}`} />
           </div>
           <div className="split-view">
-            {autoFile ? <FileViewer key={autoFile} file={stageFiles.find(f => f.path === autoFile) || { path: autoFile }} />
+            {autoFile ? <FileViewer key={autoFile} file={stageFiles.find(f => f.path === autoFile) || { path: autoFile }} onDeleted={() => open()} />
               : <Empty>{stageFiles.length ? 'اختار ملف من القايمة.' : s.status === 'blocked' ? 'المرحلة دي مستنية المراحل اللي قبلها.' : 'المرحلة دي لسه متعملتش.'}</Empty>}
           </div>
         </div>
@@ -316,6 +335,17 @@ function DayView({ p, day, onClose, go }: { p: ProductFull; day: number; onClose
   const vis = d.visuals.map(v => p.files.find(f => f.path === v)!).filter(Boolean);
   const images = vis.filter(f => f.kind === 'image');
   const texts = vis.filter(f => f.kind === 'text');
+  // الأسماء المتوقعة حسب بنية الـ Skills: 01-copy/week-N/day-N-<وصف>.md و 02-visuals/week-N/day-N-<وصف>/
+  const wk = `week-${d.week || 1}`;
+  const stem = d.copy ? d.copy.split('/').pop()!.replace(/\.md$/, '')
+    : vis[0] ? vis[0].path.split('/').slice(-2, -1)[0]
+    : `day-${d.day}-${(d.row.hook || '').replace(/[^\p{L}\p{N}\s]/gu, '').trim().split(/\s+/).slice(0, 5).join('-')}`.replace(/-$/, '');
+  const visDir = vis[0] ? vis[0].path.split('/').slice(0, -1).join('/') : `campaigns/${p.slug}/02-visuals/${wk}/${stem}`;
+  const createCopy = async () => {
+    const tpl = `# يوم ${d.day} — أسبوع ${d.week || 1} — ${d.row.type || ''}\n\n**الهدف:** ${d.row.goal || ''}\n**الصيغة:** ${d.row.format || ''}\n**الهوك:** ${d.row.hook || ''}\n\n---\n\n\n\n---\n\n**CTA:** ${d.row.cta || ''}\n`;
+    try { const r = await api.newFile(`campaigns/${p.slug}/01-copy/${wk}`, `${stem}.md`, tpl); toast('ملف البوست اتعمل ✓ — دوس «تعديل» واكتب'); go('copy', `day:${d.day}`); void r; }
+    catch (e: any) { toast(e.message, 'err'); }
+  };
   return (
     <div className="card dayview">
       <div className="dayview-h">
@@ -329,13 +359,15 @@ function DayView({ p, day, onClose, go }: { p: ProductFull; day: number; onClose
       <div className="day-grid">
         <div>
           <div className="list-h">البوست</div>
-          {d.copy ? <FileViewer file={p.files.find(f => f.path === d.copy) || { path: d.copy }} /> : <Empty>البوست لسه متكتبش (book-launch-writer).</Empty>}
+          {d.copy ? <FileViewer key={d.copy} compact file={p.files.find(f => f.path === d.copy) || { path: d.copy }} />
+            : <Empty>البوست لسه متكتبش (book-launch-writer).<div className="row center"><button type="button" className="btn" onClick={createCopy}>+ اكتبه بنفسك هنا</button></div></Empty>}
         </div>
         <div>
           <div className="list-h">التصميم</div>
           {images.length > 0 && <div className="gallery small">{images.map(f => <button key={f.path} type="button" onClick={() => go('visuals', f.path)}><img src={fileUrl(f.path)} alt={f.name} loading="lazy" /></button>)}</div>}
-          {texts.map(f => <FileViewer key={f.path} file={f} />)}
+          {texts.map(f => <FileViewer key={f.path} compact file={f} />)}
           {!vis.length && <Empty>مفيش تصميم لليوم ده لسه (book-launch-visual-producer).</Empty>}
+          <Uploader dir={visDir} label="ارفع تصميم لليوم ده" />
           {d.reels.length > 0 && <>
             <div className="list-h">الريل</div>
             {d.reels.filter(r => /\.(mp4|webm|mov)$/i.test(r)).map(r => <video key={r} className="media" src={fileUrl(r)} controls preload="metadata" />)}

@@ -41,7 +41,7 @@ export function walk(absDir, base = absDir) {
   const out = [];
   if (!fs.existsSync(absDir)) return out;
   for (const ent of fs.readdirSync(absDir, { withFileTypes: true })) {
-    if (IGNORE.has(ent.name)) continue;
+    if (IGNORE.has(ent.name) || /\.(tmp|part)-\d+$/.test(ent.name)) continue;
     const abs = path.join(absDir, ent.name);
     if (ent.isDirectory()) out.push(...walk(abs, base));
     else if (ent.isFile()) {
@@ -169,6 +169,7 @@ export function discover(config = loadConfig()) {
       created: meta.created || null,
       notes: meta.notes || '',
       stagesState: meta.stages || {},
+      reviews: meta.reviews || {},
       registered,
       metaError: meta._error || null,
     });

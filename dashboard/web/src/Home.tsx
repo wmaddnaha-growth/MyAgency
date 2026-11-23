@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { href, fmtDate, DONE, type ProductSummary, type Config } from './api';
 import { StageDots, StatusBadge, Progress, Empty, STATUS_LABEL } from './ui';
+import { NewProductForm } from './Edit';
 
 type Data = { products: ProductSummary[]; unregisteredSources: { folder: string; suggestedName: string; suggestedSlug: string }[] };
 
@@ -13,6 +14,7 @@ export function Home({ data, config }: { data: Data; config: Config }) {
   const [series, setSeries] = useState<string>('all');
   const [type, setType] = useState<string>('all');
   const [q, setQ] = useState('');
+  const [creating, setCreating] = useState(false);
   const [sort, setSort] = useState<'name' | 'progress' | 'updated'>(() => readPref('sort', 'updated'));
 
   const all = data.products;
@@ -70,12 +72,14 @@ export function Home({ data, config }: { data: Data; config: Config }) {
           <option value="progress">نسبة الإنجاز</option>
           <option value="name">الاسم</option>
         </select>
+        <button type="button" className="btn" onClick={() => setCreating(c => !c)}>+ منتج جديد</button>
         <div className="seg">
           <button type="button" className={view === 'cards' ? 'on' : ''} onClick={() => { setView('cards'); writePref('view', 'cards'); }}>كروت</button>
           <button type="button" className={view === 'matrix' ? 'on' : ''} onClick={() => { setView('matrix'); writePref('view', 'matrix'); }}>مصفوفة</button>
         </div>
       </section>
 
+      {creating && <div className="mb"><NewProductForm config={config} series={seriesList} onClose={() => setCreating(false)} /></div>}
       {!list.length && <Empty>مفيش منتجات بالفلتر ده.</Empty>}
 
       {view === 'cards' ? (

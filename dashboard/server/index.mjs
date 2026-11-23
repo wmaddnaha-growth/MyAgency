@@ -4,6 +4,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { ROOT, loadConfig, allProducts, getProduct, search } from '../lib/core.mjs';
+import { handleWrite } from './write-routes.mjs';
 
 const PORT = Number(process.env.PORT || 5178);
 const DIST = path.join(ROOT, 'dashboard', 'web', 'dist');
@@ -65,27 +66,48 @@ function broadcast(changed) {
   const msg = `event: change\ndata: ${JSON.stringify({ paths: [...changed].slice(0, 50) })}\n\n`;
   for (const c of clients) c.write(msg);
 }
-function watch(dir) {
-  const abs = path.join(ROOT, dir);
-  if (!fs.existsSync(abs)) return;
+function notify(relPath) {
+  if (/\.(tmp|part)-\d+$/.test(relPath)) return;
+  pending.add(relPath);
+  clearTimeout(timer);
+  timer = setTimeout(() => { const p = pending; pending = new Set(); broadcast(p); }, 400);
+}
+// watcher لكل فولدر لوحده (مش recursive): الـ recursive بتاع Node على Linux بيفقد الملف
+// بعد ما يتستبدل بـ rename (الحفظ الذري)، لكن watch الفولدر نفسه بيشوف أي تغيير جواه دايمًا.
+const watchers = new Map();
+function watchTree(absDir) {
+  if (watchers.has(absDir)) return;
+  let w;
   try {
-    fs.watch(abs, { recursive: true }, (_e, f) => {
-      pending.add(`${dir}/${String(f || '').split(path.sep).join('/')}`);
-      clearTimeout(timer);
-      timer = setTimeout(() => { const p = pending; pending = new Set(); broadcast(p); }, 400);
+    w = fs.watch(absDir, (_e, f) => {
+      const child = path.join(absDir, String(f || ''));
+      notify(path.relative(ROOT, child).split(path.sep).join('/'));
+      if (f && !watchers.has(child)) { try { if (fs.statSync(child).isDirectory()) watchTree(child); } catch { /* اتمسح */ } }
+      if (!fs.existsSync(absDir)) { w.close(); watchers.delete(absDir); }
     });
-  } catch (e) { console.warn('watch failed for', dir, e.message); }
+  } catch (e) { return console.warn('watch failed for', absDir, e.message); }
+  w.on('error', () => { w.close(); watchers.delete(absDir); });
+  watchers.set(absDir, w);
+  for (const ent of fs.readdirSync(absDir, { withFileTypes: true })) {
+    if (ent.isDirectory() && !['node_modules', '.git'].includes(ent.name)) watchTree(path.join(absDir, ent.name));
+  }
 }
 const cfg0 = loadConfig();
-[cfg0.paths.campaigns, cfg0.paths.sources].forEach(watch);
-fs.watch(path.join(ROOT, 'pipeline.config.json'), () => broadcast(new Set(['pipeline.config.json'])));
+for (const d of [cfg0.paths.campaigns, cfg0.paths.sources]) {
+  const abs = path.join(ROOT, d);
+  fs.mkdirSync(abs, { recursive: true });
+  watchTree(abs);
+}
+// pipeline.config.json: نراقب الروت نفسه (عشان الاستبدال بـ rename)
+fs.watch(ROOT, (_e, f) => { if (f === 'pipeline.config.json') notify('pipeline.config.json'); });
 setInterval(() => { for (const c of clients) c.write(': ping\n\n'); }, 25000);
 
 // ---------- Routes ----------
-const server = http.createServer((req, res) => {
+const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const p = decodeURIComponent(url.pathname);
   try {
+    if (p.startsWith('/api/') && await handleWrite(req, res, url, p, json)) return;
     if (p === '/api/config') return json(res, 200, loadConfig());
     if (p === '/api/products') {
       const config = loadConfig();
@@ -133,8 +155,9 @@ const server = http.createServer((req, res) => {
     if (!file.startsWith(DIST) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) file = path.join(DIST, 'index.html');
     return sendFile(req, res, file);
   } catch (e) {
-    console.error(e);
-    return json(res, 500, { error: e.message });
+    if (!e.status) console.error(e);
+    if (res.headersSent) return res.end();
+    return json(res, e.status || 500, { error: e.message, ...(e.current != null ? { current: e.current } : {}) });
   }
 });
 

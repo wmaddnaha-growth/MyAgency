@@ -17,7 +17,9 @@ export type ProductSummary = {
   counts: Record<string, number>; fileCount: number; sourceCount: number; calendarDays: number;
 };
 export type Day = { week: number | null; day: number; row: Record<string, string>; copy: string | null; visuals: string[]; reels: string[] };
+export type Review = { status: string; note?: string; updatedAt?: string };
 export type ProductFull = ProductSummary & {
+  reviews: Record<string, Review>;
   files: FileInfo[]; otherFiles: FileInfo[]; sourceFiles: FileInfo[];
   calendar: { headers: string[]; days: Day[] } | null;
 };
@@ -36,13 +38,55 @@ async function getJson<T>(url: string): Promise<T> {
   if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || r.statusText);
   return r.json();
 }
+async function post<T>(url: string, body: unknown): Promise<T> {
+  const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Dashboard': '1' }, body: JSON.stringify(body) });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) { const e = new Error(data.error || r.statusText) as Error & { status?: number; current?: string }; e.status = r.status; e.current = data.current; throw e; }
+  return data as T;
+}
+export type Commit = { committed: boolean; reason?: string };
+export type HistoryItem = { hash: string; date: number; author: string; subject: string };
+
 export const api = {
   config: () => getJson<Config>('/api/config'),
   products: () => getJson<{ products: ProductSummary[]; unregisteredSources: { folder: string; suggestedName: string; suggestedSlug: string }[] }>('/api/products'),
   product: (slug: string) => getJson<ProductFull>(`/api/products/${encodeURIComponent(slug)}`),
   search: (q: string) => getJson<SearchHit[]>(`/api/search?q=${encodeURIComponent(q)}`),
+  textMeta: (p: string) => getJson<{ path: string; content: string; hash: string; mtime: number }>(`/api/text?path=${encodeURIComponent(p)}`),
+  save: (path: string, content: string, baseHash?: string, force = false) =>
+    post<{ path: string; hash: string; commit: Commit; sync: null | { changed: number; removed: number; added: string[]; unsynced: string[] } }>('/api/save', { path, content, baseHash, force }),
+  newFile: (dir: string, name: string, content = '') => post<{ path: string }>('/api/new-file', { dir, name, content }),
+  trash: (path: string) => post<{ path: string; trashedTo: string }>('/api/trash', { path }),
+  history: (p: string) => getJson<HistoryItem[]>(`/api/history?path=${encodeURIComponent(p)}`),
+  version: (p: string, hash: string) => getJson<{ content: string }>(`/api/version?path=${encodeURIComponent(p)}&hash=${hash}`),
+  restore: (path: string, hash: string) => post<{ path: string }>('/api/restore', { path, hash }),
+  setStage: (slug: string, stage: string, status: string, note: string) => post(`/api/products/${encodeURIComponent(slug)}/stage`, { stage, status, note }),
+  setReview: (slug: string, path: string, status: string | null, note = '') => post(`/api/products/${encodeURIComponent(slug)}/review`, { path, status, note }),
+  updateMeta: (slug: string, patch: Record<string, unknown>) => post(`/api/products/${encodeURIComponent(slug)}/meta`, patch),
+  createProduct: (data: Record<string, unknown>) => post<{ product: { slug: string } }>('/api/products', data),
   text: async (p: string) => { const r = await fetch(fileUrl(p)); if (!r.ok) throw new Error('تعذر فتح الملف'); return r.text(); },
 };
+
+export function upload(dir: string, file: File, onProgress?: (pct: number) => void): Promise<{ path: string }> {
+  return new Promise((resolve, reject) => {
+    const x = new XMLHttpRequest();
+    x.open('POST', `/api/upload?dir=${encodeURIComponent(dir)}&name=${encodeURIComponent(file.name)}`);
+    x.setRequestHeader('X-Dashboard', '1');
+    x.upload.onprogress = e => e.lengthComputable && onProgress?.(Math.round((e.loaded / e.total) * 100));
+    x.onload = () => { let d: any = {}; try { d = JSON.parse(x.responseText); } catch { /* */ } x.status < 300 ? resolve(d) : reject(new Error(d.error || 'فشل الرفع')); };
+    x.onerror = () => reject(new Error('فشل الرفع'));
+    x.send(file);
+  });
+}
+
+export const isWritable = (p: string) => /^(campaigns|Books)\//.test(p);
+
+// ---------- تعديلات مش محفوظة ----------
+const dirty = new Set<string>();
+export function setDirty(id: string, on: boolean) { on ? dirty.add(id) : dirty.delete(id); }
+export const hasDirty = () => dirty.size > 0;
+const LEAVE = 'فيه تعديلات مش محفوظة. تسيبها وتمشي؟';
+addEventListener('beforeunload', e => { if (dirty.size) { e.preventDefault(); e.returnValue = LEAVE; } });
 
 // إصدار بيزيد كل ما ملف يتغير على الديسك (SSE)
 let version = 0;
@@ -89,7 +133,15 @@ export function href(r: Route) {
 }
 export function useRoute() {
   const [r, setR] = useState(parseHash());
-  useEffect(() => { const f = () => setR(parseHash()); addEventListener('hashchange', f); return () => removeEventListener('hashchange', f); }, []);
+  useEffect(() => {
+    let last = location.hash;
+    const f = () => {
+      if (dirty.size && !confirm(LEAVE)) { history.replaceState(null, '', last || '#/'); return; }
+      dirty.clear();
+      last = location.hash; setR(parseHash());
+    };
+    addEventListener('hashchange', f); return () => removeEventListener('hashchange', f);
+  }, []);
   return r;
 }
 

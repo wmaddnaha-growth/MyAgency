@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { marked } from 'marked';
-import { api, fileUrl, fmtSize, fmtDate, useLiveVersion, type FileInfo, type Stage } from './api';
+import { api, fileUrl, fmtSize, fmtDate, useLiveVersion, isWritable, type FileInfo, type Stage, type Review } from './api';
+import { TextEditor, CsvEditor, HistoryPanel, ReviewControl, trashFile, useProductCtx, REVIEW_LABEL } from './Edit';
 
 export const STATUS_LABEL: Record<string, string> = {
   missing: 'لسه', partial: 'ناقص', done: 'موجود', blocked: 'مستني مرحلة قبله',
@@ -56,13 +57,17 @@ function parseCsv(text: string): string[][] {
 }
 
 // ---------- File viewer ----------
-export function FileViewer({ file, onClose }: { file: FileInfo | { path: string; kind?: string; name?: string; size?: number; mtime?: number }; onClose?: () => void }) {
+export function FileViewer({ file, onClose, onDeleted, compact }: { file: FileInfo | { path: string; kind?: string; name?: string; size?: number; mtime?: number }; onClose?: () => void; onDeleted?: () => void; compact?: boolean }) {
   const v = useLiveVersion();
+  const ctx = useProductCtx();
   const kind = file.kind || guessKind(file.path);
   const name = file.name || file.path.split('/').pop()!;
   const [text, setText] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [mode, setMode] = useState<'view' | 'edit' | 'history'>('view');
   const isText = ['text', 'table', 'json'].includes(kind);
+  const writable = isWritable(file.path);
+  const editable = writable && isText;
   useEffect(() => {
     if (!isText) return;
     let alive = true; setErr(null);
@@ -70,9 +75,10 @@ export function FileViewer({ file, onClose }: { file: FileInfo | { path: string;
     return () => { alive = false; };
   }, [file.path, v, isText]);
   const src = fileUrl(file.path) + `&v=${v}`;
+  const review = ctx?.reviews[file.path];
 
   return (
-    <div className="viewer">
+    <div className={`viewer${mode !== 'view' ? ' editing' : ''}`}>
       <div className="viewer-head">
         <div className="viewer-title">
           <span className={`kind k-${kind}`}>{KIND_LABEL[kind] || kind}</span>
@@ -81,25 +87,36 @@ export function FileViewer({ file, onClose }: { file: FileInfo | { path: string;
           {file.mtime ? <span className="muted">· {fmtDate(file.mtime)}</span> : null}
         </div>
         <div className="viewer-actions">
+          {editable && mode !== 'edit' && <button type="button" className="btn" onClick={() => setMode('edit')}>✎ تعديل</button>}
+          {writable && <button type="button" className={`btn ghost${mode === 'history' ? ' on' : ''}`} onClick={() => setMode(m => m === 'history' ? 'view' : 'history')}>السجل</button>}
+          {ctx && writable && <ReviewControl slug={ctx.slug} path={file.path} review={review} />}
+          {!compact && <>
+            <a className="btn ghost" href={fileUrl(file.path)} target="_blank" rel="noreferrer">فتح في تاب</a>
+            <a className="btn ghost" href={fileUrl(file.path) + '&download'}>تنزيل</a>
+          </>}
           <button type="button" className="btn ghost" onClick={() => navigator.clipboard?.writeText(file.path)} title="نسخ المسار">نسخ المسار</button>
-          <a className="btn ghost" href={fileUrl(file.path)} target="_blank" rel="noreferrer">فتح في تاب</a>
-          <a className="btn ghost" href={fileUrl(file.path) + '&download'}>تنزيل</a>
+          {writable && !compact && <button type="button" className="btn ghost danger" onClick={() => trashFile(file.path, onDeleted)} title="حذف (لسلة المحذوفات)">حذف</button>}
           {onClose && <button type="button" className="btn ghost" onClick={onClose} aria-label="قفل">✕</button>}
         </div>
       </div>
-      <div className="viewer-body">
-        {err && <Empty>{err}</Empty>}
-        {isText && text == null && !err && <div className="loading">جاري التحميل…</div>}
-        {kind === 'text' && text != null && (file.path.endsWith('.md') ? <Markdown text={text} /> : <pre className="pre">{text}</pre>)}
-        {kind === 'json' && text != null && <pre className="pre" dir="ltr">{pretty(text)}</pre>}
-        {kind === 'table' && text != null && <CsvTable text={text} />}
-        {kind === 'image' && <img className="media" src={src} alt={name} />}
-        {kind === 'video' && <video className="media" src={src} controls preload="metadata" />}
-        {kind === 'audio' && <audio src={src} controls />}
-        {kind === 'pdf' && <iframe className="frame" src={fileUrl(file.path)} title={name} />}
-        {kind === 'html' && <iframe className="frame" src={fileUrl(file.path)} title={name} sandbox="allow-scripts" />}
-        {kind === 'other' && <Empty>مفيش معاينة للنوع ده — استخدم «تنزيل».</Empty>}
-      </div>
+      {mode === 'edit' && kind === 'table' && <CsvEditor path={file.path} onClose={() => setMode('view')} />}
+      {mode === 'edit' && kind !== 'table' && <TextEditor path={file.path} onClose={() => setMode('view')} />}
+      {mode === 'history' && <div className="viewer-body"><HistoryPanel path={file.path} kind={kind} onRestored={() => setMode('view')} /></div>}
+      {mode === 'view' && (
+        <div className="viewer-body">
+          {err && <Empty>{err}</Empty>}
+          {isText && text == null && !err && <div className="loading">جاري التحميل…</div>}
+          {kind === 'text' && text != null && (file.path.endsWith('.md') ? <Markdown text={text} /> : <pre className="pre">{text}</pre>)}
+          {kind === 'json' && text != null && <pre className="pre" dir="ltr">{pretty(text)}</pre>}
+          {kind === 'table' && text != null && <CsvTable text={text} />}
+          {kind === 'image' && <img className="media" src={src} alt={name} />}
+          {kind === 'video' && <video className="media" src={src} controls preload="metadata" />}
+          {kind === 'audio' && <audio src={src} controls />}
+          {kind === 'pdf' && <iframe className="frame" src={fileUrl(file.path)} title={name} />}
+          {kind === 'html' && <iframe className="frame" src={fileUrl(file.path)} title={name} sandbox="allow-scripts" />}
+          {kind === 'other' && <Empty>مفيش معاينة للنوع ده — استخدم «تنزيل».</Empty>}
+        </div>
+      )}
     </div>
   );
 }
@@ -128,6 +145,7 @@ export function guessKind(p: string) {
 
 // ---------- File list ----------
 export function FileList({ files, active, onOpen, base }: { files: FileInfo[]; active?: string; onOpen: (f: FileInfo) => void; base?: string }) {
+  const ctx = useProductCtx();
   if (!files.length) return <Empty>مفيش ملفات هنا لسه.</Empty>;
   return (
     <ul className="files">
@@ -138,6 +156,7 @@ export function FileList({ files, active, onOpen, base }: { files: FileInfo[]; a
             <button type="button" className={`file${active === f.path ? ' active' : ''}`} onClick={() => onOpen(f)}>
               <span className={`kind k-${f.kind}`}>{KIND_LABEL[f.kind] || f.kind}</span>
               <span className="file-name" title={f.path}>{label}</span>
+              {ctx?.reviews[f.path] && <RvDot r={ctx.reviews[f.path]} />}
               <span className="muted file-meta">{fmtSize(f.size)}</span>
             </button>
           </li>
@@ -145,4 +164,8 @@ export function FileList({ files, active, onOpen, base }: { files: FileInfo[]; a
       })}
     </ul>
   );
+}
+
+function RvDot({ r }: { r: Review }) {
+  return <span className={`rvdot rv-${r.status}`} title={`${REVIEW_LABEL[r.status]}${r.note ? ': ' + r.note : ''}`}>{r.status === 'approved' ? '✓' : r.status === 'needs-fix' ? '!' : '✕'}</span>;
 }

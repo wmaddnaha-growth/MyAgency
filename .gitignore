@@ -8,3 +8,5 @@ dashboard/web/dist/
 whiteboard-video/out/
 00-المرجعية-source-book/
 .DS_Store
+
+.trash/

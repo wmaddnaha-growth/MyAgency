@@ -3,6 +3,7 @@ import { api, useAsync, useLiveVersion, useRoute, href, fileUrl, type SearchHit 
 import { Home } from './Home';
 import { Product } from './Product';
 import { Empty, KIND_LABEL } from './ui';
+import { Toaster } from './Edit';
 
 export function App() {
   const route = useRoute();
@@ -36,11 +37,12 @@ export function App() {
 
       {route.page === 'home' && config.data && products.data && <Home data={products.data} config={config.data} />}
       {route.page === 'product' && (
-        product.data ? <Product p={product.data} tab={route.tab} file={route.file} />
+        product.data && config.data ? <Product p={product.data} tab={route.tab} file={route.file} config={config.data} />
           : product.error ? <div className="page"><Empty>{product.error} — <a href="#/">ارجع للمنتجات</a></Empty></div>
           : <div className="page"><div className="loading">جاري التحميل…</div></div>
       )}
       {route.page === 'search' && <SearchPage q={route.q} />}
+      <Toaster />
       {(route.page === 'home' && (!config.data || !products.data) && !config.error && !products.error) && <div className="page"><div className="loading">جاري التحميل…</div></div>}
     </>
   );
