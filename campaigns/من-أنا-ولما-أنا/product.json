@@ -10,8 +10,8 @@
   "notes": "",
   "stages": {
     "brand": {
-      "status": "needs-fix",
-      "note": "QA (20261123055202-abaf9f): [الملف: `campaigns/من-أنا-ولما-أنا/brand.md:10`]: التنبيه ناقص · المشكلة: التنبيه بيتكلم عن الغلاف بس. لكن اللون الافتراضي لـ `--hue` في `Brand Identity/06-product-identity/product.css:2` هو teal كمان (`#0B3F3B`). وصفحات الكتاب الداخلية في `ebook-page-templates.html` بتاخد ألوانها من الملف ده من غير",
+      "status": "review",
+      "note": "اتعملت من الداشبورد (مهمة 20261123055550-153438) — مستنية مراجعة",
       "updatedAt": "2026-11-23",
       "by": "dashboard"
     }
