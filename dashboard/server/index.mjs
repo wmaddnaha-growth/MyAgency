@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { ROOT, loadConfig, allProducts, getProduct, search } from '../lib/core.mjs';
 import { handleWrite } from './write-routes.mjs';
+import { setJobListener, listJobs, getJob, createJob, cancelJob, cliStatus } from '../lib/jobs.mjs';
 
 const PORT = Number(process.env.PORT || 5178);
 const DIST = path.join(ROOT, 'dashboard', 'web', 'dist');
@@ -102,11 +103,31 @@ for (const d of [cfg0.paths.campaigns, cfg0.paths.sources]) {
 fs.watch(ROOT, (_e, f) => { if (f === 'pipeline.config.json') notify('pipeline.config.json'); });
 setInterval(() => { for (const c of clients) c.write(': ping\n\n'); }, 25000);
 
+// أحداث المهام (تشغيل الـ Skills) على نفس قناة SSE
+setJobListener(ev => {
+  const msg = `event: ${ev.type}\ndata: ${JSON.stringify(ev)}\n\n`;
+  for (const c of clients) c.write(msg);
+});
+
+async function readJson(req) {
+  const chunks = []; for await (const c of req) chunks.push(c);
+  try { return chunks.length ? JSON.parse(Buffer.concat(chunks).toString('utf8')) : {}; } catch { const e = new Error('JSON غير صالح'); e.status = 400; throw e; }
+}
+function guardPost(req) {
+  if (req.headers['x-dashboard'] !== '1') { const e = new Error('طلب غير مسموح'); e.status = 403; throw e; }
+}
+
 // ---------- Routes ----------
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const p = decodeURIComponent(url.pathname);
   try {
+    if (p === '/api/runner') return json(res, 200, { cli: await cliStatus(url.searchParams.has('refresh')), runner: loadConfig().runner || {} });
+    if (p === '/api/jobs' && req.method === 'GET') return json(res, 200, listJobs({ slug: url.searchParams.get('slug') || undefined }));
+    if (p === '/api/jobs' && req.method === 'POST') { guardPost(req); return json(res, 200, createJob(await readJson(req))); }
+    let jm;
+    if ((jm = p.match(/^\/api\/jobs\/([\w-]+)$/)) && req.method === 'GET') { const j = getJob(jm[1]); return j ? json(res, 200, j) : json(res, 404, { error: 'مهمة غير موجودة' }); }
+    if ((jm = p.match(/^\/api\/jobs\/([\w-]+)\/cancel$/)) && req.method === 'POST') { guardPost(req); return json(res, 200, cancelJob(jm[1])); }
     if (p.startsWith('/api/') && await handleWrite(req, res, url, p, json)) return;
     if (p === '/api/config') return json(res, 200, loadConfig());
     if (p === '/api/products') {

@@ -1,10 +1,10 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 
 export type FileInfo = { path: string; name: string; inner: string; ext: string; kind: string; size: number; mtime: number };
 export type StageState = { status: string; note?: string; updatedAt?: string; by?: string } | null;
 export type Stage = {
   id: string; label: string; group: string; skill: string; kind: 'single' | 'perDay' | 'collection';
-  dir: string; outputs?: string[]; dependsOn: string[]; gate?: string; match?: string;
+  dir: string; outputs?: string[]; dependsOn: string[]; gate?: string; match?: string; args?: 'days'; prompt?: string;
   auto: string; status: string; progress: { done: number; total: number | null } | null; detail: string;
   fileCount: number; files?: FileInfo[]; manual: StageState; blockedBy: string[];
 };
@@ -47,7 +47,23 @@ async function post<T>(url: string, body: unknown): Promise<T> {
 export type Commit = { committed: boolean; reason?: string };
 export type HistoryItem = { hash: string; date: number; author: string; subject: string };
 
+export type JobChange = { path: string; change: 'added' | 'modified' | 'deleted' };
+export type Job = {
+  id: string; slug: string; productName: string; stage: string; stageLabel: string; skill: string; action: 'run' | 'fix' | 'qa';
+  days: number[]; extra: string; parentId: string | null; status: 'queued' | 'running' | 'done' | 'failed' | 'cancelled' | 'interrupted';
+  createdAt: number; startedAt: number | null; endedAt: number | null; sessionId: string | null; costUsd: number | null; turns: number | null;
+  result: string | null; verdict: string | null; changed: JobChange[]; error: string | null; budgetUsd: number; tools: string[]; model: string | null;
+  prompt?: string; systemPrompt?: string; autoQa?: boolean;
+};
+export type LogEv = { t: number; kind: string; text: string; name?: string };
+export type RunnerInfo = { cli: { installed: boolean; loggedIn: boolean; authMethod?: string; error?: string }; runner: { maxConcurrent?: number; budgetUsd?: number; autoQa?: boolean; model?: string | null } };
+
 export const api = {
+  runner: (refresh = false) => getJson<RunnerInfo>('/api/runner' + (refresh ? '?refresh' : '')),
+  jobs: (slug?: string) => getJson<Job[]>('/api/jobs' + (slug ? `?slug=${encodeURIComponent(slug)}` : '')),
+  job: (id: string) => getJson<Job & { log: LogEv[] }>(`/api/jobs/${id}`),
+  createJob: (spec: { slug: string; stage: string; action: string; days?: string; extra?: string; parentId?: string; message?: string }) => post<Job>('/api/jobs', spec),
+  cancelJob: (id: string) => post<Job>(`/api/jobs/${id}/cancel`, {}),
   config: () => getJson<Config>('/api/config'),
   products: () => getJson<{ products: ProductSummary[]; unregisteredSources: { folder: string; suggestedName: string; suggestedSlug: string }[] }>('/api/products'),
   product: (slug: string) => getJson<ProductFull>(`/api/products/${encodeURIComponent(slug)}`),
@@ -92,10 +108,32 @@ addEventListener('beforeunload', e => { if (dirty.size) { e.preventDefault(); e.
 let version = 0;
 const listeners = new Set<(v: number) => void>();
 let es: EventSource | null = null;
+const evListeners = new Map<string, Set<(d: any) => void>>();
 function ensureEvents() {
   if (es) return;
   es = new EventSource('/api/events');
   es.addEventListener('change', () => { version++; listeners.forEach(l => l(version)); });
+  for (const name of ['job', 'log']) es.addEventListener(name, e => { const d = JSON.parse((e as MessageEvent).data); evListeners.get(name)?.forEach(f => f(d)); });
+}
+export function useServerEvent(name: 'job' | 'log', cb: (d: any) => void) {
+  const ref = useRef(cb); ref.current = cb;
+  useEffect(() => {
+    ensureEvents();
+    const f = (d: any) => ref.current(d);
+    if (!evListeners.has(name)) evListeners.set(name, new Set());
+    evListeners.get(name)!.add(f);
+    return () => { evListeners.get(name)!.delete(f); };
+  }, [name]);
+}
+// قايمة المهام لايف (بتتحدث مع كل حدث job)
+export function useJobs(slug?: string) {
+  const [list, setList] = useState<Job[] | null>(null);
+  useEffect(() => { let a = true; api.jobs(slug).then(l => a && setList(l)).catch(() => a && setList([])); return () => { a = false; }; }, [slug]);
+  useServerEvent('job', ({ job }: { job: Job }) => {
+    if (slug && job.slug !== slug) return;
+    setList(l => { const rest = (l || []).filter(x => x.id !== job.id); return [job, ...rest].sort((a, b) => b.createdAt - a.createdAt); });
+  });
+  return list;
 }
 export function useLiveVersion() {
   const [v, setV] = useState(version);
@@ -116,7 +154,7 @@ export function useAsync<T>(fn: () => Promise<T>, deps: unknown[]) {
 }
 
 // ---------- Router (hash) ----------
-export type Route = { page: 'home' } | { page: 'product'; slug: string; tab: string; file?: string } | { page: 'search'; q: string };
+export type Route = { page: 'home' } | { page: 'product'; slug: string; tab: string; file?: string } | { page: 'search'; q: string } | { page: 'jobs'; id?: string };
 export function parseHash(): Route {
   const h = decodeURIComponent(location.hash.replace(/^#\/?/, ''));
   const [pathPart, query = ''] = h.split('?');
@@ -124,11 +162,13 @@ export function parseHash(): Route {
   const parts = pathPart.split('/').filter(Boolean);
   if (parts[0] === 'p' && parts[1]) return { page: 'product', slug: parts[1], tab: parts[2] || 'overview', file: qs.get('f') || undefined };
   if (parts[0] === 'search') return { page: 'search', q: qs.get('q') || '' };
+  if (parts[0] === 'jobs') return { page: 'jobs', id: parts[1] };
   return { page: 'home' };
 }
 export function href(r: Route) {
   if (r.page === 'product') return `#/p/${encodeURIComponent(r.slug)}/${r.tab}${r.file ? `?f=${encodeURIComponent(r.file)}` : ''}`;
   if (r.page === 'search') return `#/search?q=${encodeURIComponent(r.q)}`;
+  if (r.page === 'jobs') return r.id ? `#/jobs/${r.id}` : '#/jobs';
   return '#/';
 }
 export function useRoute() {
@@ -149,3 +189,7 @@ export function useRoute() {
 export const fmtSize = (n: number) => n < 1024 ? `${n} B` : n < 1048576 ? `${(n / 1024).toFixed(0)} KB` : `${(n / 1048576).toFixed(1)} MB`;
 export const fmtDate = (ms: number) => ms ? new Date(ms).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
 export const DONE = ['done', 'approved', 'skipped'];
+
+export const fmtDur = (ms: number) => { const s = Math.round(ms / 1000); return s < 60 ? `${s} ث` : `${Math.floor(s / 60)} د ${s % 60} ث`; };
+export const JOB_STATUS: Record<string, string> = { queued: 'في الطابور', running: 'شغالة', done: 'خلصت', failed: 'فشلت', cancelled: 'اتلغت', interrupted: 'اتقطعت' };
+export const JOB_ACTION: Record<string, string> = { run: 'تشغيل', fix: 'تعديل حسب الملاحظات', qa: 'مراجعة QA' };

@@ -377,3 +377,57 @@ details summary { cursor: pointer; color: var(--teal); margin: 10px 0 6px; font-
   .popover { width: calc(100vw - 48px); }
   .editor-bar { top: 52px; }
 }
+
+/* ======================= المرحلة 3: تشغيل الـ Skills ======================= */
+.jobs-ind { color: #fff; text-decoration: none; font-size: 13px; padding: 4px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.3); display: inline-flex; gap: 6px; align-items: center; white-space: nowrap; }
+.jobs-ind.on { background: var(--gold); border-color: var(--gold); }
+.spinner { width: 12px; height: 12px; border-radius: 50%; border: 2px solid currentColor; border-top-color: transparent; display: inline-block; animation: spin .8s linear infinite; vertical-align: -2px; flex: none; }
+.spinner.light { color: #fff; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 3s; } }
+
+.runpanel { display: flex; flex-direction: column; gap: 10px; border-inline-start: 4px solid var(--pc); }
+.runpanel .card.notice { box-shadow: none; }
+.field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--ink-mute); }
+.field .input { color: var(--ink); max-width: 520px; }
+.field textarea.input { max-width: none; }
+.job-active { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #EAF0F8; color: var(--info); border-radius: var(--r); text-decoration: none; font-size: 14px; }
+.full { width: 100%; resize: vertical; }
+
+.joblist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.jobrow { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--r); text-decoration: none; color: var(--ink); background: var(--paper); flex-wrap: wrap; }
+.jobrow:hover { background: var(--paper-2); }
+.jtitle { flex: 1; min-width: 200px; font-size: 14px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.jstat { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 2px 10px; border-radius: 999px; background: var(--paper-3); color: var(--ink-mute); white-space: nowrap; }
+.jstat.js-running { background: #EAF0F8; color: var(--info); }
+.jstat.js-done { background: #E3F2E8; color: var(--success); }
+.jstat.js-failed, .jstat.js-interrupted { background: #FBEAE6; color: var(--danger); }
+.jstat.js-queued { background: #FBEFD5; color: var(--warning); }
+
+.jobhead { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; align-items: flex-start; }
+.jobhead h2 { font-size: 22px; margin: 4px 0 8px; }
+.back-dark { font-size: 13px; text-decoration: none; }
+.notice.err { background: #FBEAE6; border-color: #E9B8AD; }
+.jobgrid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.joblog { display: flex; flex-direction: column; gap: 6px; max-height: 70vh; overflow-y: auto; font-size: 13px; }
+.logline { display: flex; gap: 8px; align-items: baseline; padding: 4px 8px; border-radius: 6px; }
+.logline .lt { font-size: 11px; font-variant-numeric: tabular-nums; flex: none; }
+.logline .lx { overflow-wrap: anywhere; min-width: 0; }
+.lname { font-family: ui-monospace, Menlo, monospace; font-size: 11px; background: var(--paper-3); padding: 0 6px; border-radius: 4px; flex: none; }
+.lk-text { display: block; background: var(--paper); border: 1px solid var(--paper-3); padding: 8px 12px; }
+.lk-text .md { font-size: 14px; line-height: 1.8; }
+.lk-tool { color: var(--ink-mute); }
+.lk-tool_error, .lk-error { background: #FBEAE6; color: var(--danger); }
+.lk-done { background: #E3F2E8; color: var(--success); font-weight: 500; }
+.lk-system, .lk-raw { color: var(--ink-mute); font-size: 12px; }
+.lk-wait { color: var(--info); }
+.changed { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.changed li { display: flex; gap: 8px; align-items: baseline; overflow-wrap: anywhere; }
+.chg { font-size: 11px; padding: 0 8px; border-radius: 999px; flex: none; }
+.chg-added { background: #E3F2E8; color: var(--success); }
+.chg-modified { background: #EAF0F8; color: var(--info); }
+.chg-deleted { background: #FBEAE6; color: var(--danger); }
+details.card summary { margin: 0; }
+details.card .pre { margin-top: 10px; max-height: 40vh; overflow: auto; }
+@media (max-width: 1100px) { .jobgrid { grid-template-columns: 1fr; } }
+@media (max-width: 560px) { .jobs-ind { padding: 3px 8px; } }

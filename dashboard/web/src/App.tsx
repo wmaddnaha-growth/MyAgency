@@ -4,6 +4,7 @@ import { Home } from './Home';
 import { Product } from './Product';
 import { Empty, KIND_LABEL } from './ui';
 import { Toaster } from './Edit';
+import { JobsPage, JobPage, JobsIndicator } from './Jobs';
 
 export function App() {
   const route = useRoute();
@@ -30,6 +31,7 @@ export function App() {
         <form className="search" onSubmit={e => { e.preventDefault(); if (q.trim()) location.hash = href({ page: 'search', q: q.trim() }); }}>
           <input className="input" type="search" placeholder="دوّر في كل الملفات (بوستات، بحث، إعلانات، كتب…)" value={q} onChange={e => setQ(e.target.value)} />
         </form>
+        <JobsIndicator />
         <span className="live" title="الصفحة بتتحدث لوحدها لما أي ملف يتغير"><i />لايف</span>
       </header>
 
@@ -42,6 +44,7 @@ export function App() {
           : <div className="page"><div className="loading">جاري التحميل…</div></div>
       )}
       {route.page === 'search' && <SearchPage q={route.q} />}
+      {route.page === 'jobs' && (route.id ? <JobPage id={route.id} /> : <JobsPage />)}
       <Toaster />
       {(route.page === 'home' && (!config.data || !products.data) && !config.error && !products.error) && <div className="page"><div className="loading">جاري التحميل…</div></div>}
     </>

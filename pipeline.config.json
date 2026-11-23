@@ -16,7 +16,19 @@
   "productTypes": {
     "ebook": {
       "label": "كتاب إلكتروني",
-      "stages": ["brand", "research", "bonus", "upsell", "calendar", "copy", "visuals", "reels", "landing", "ads", "performance"]
+      "stages": [
+        "brand",
+        "research",
+        "bonus",
+        "upsell",
+        "calendar",
+        "copy",
+        "visuals",
+        "reels",
+        "landing",
+        "ads",
+        "performance"
+      ]
     }
   },
   "stageStatuses": {
@@ -43,8 +55,11 @@
       "skill": "book-brand-assigner",
       "kind": "single",
       "dir": "",
-      "outputs": ["brand.md"],
-      "dependsOn": []
+      "outputs": [
+        "brand.md"
+      ],
+      "dependsOn": [],
+      "prompt": "خصّص للمنتج لونه وسجّله في brand.md حسب الـ Skill."
     },
     {
       "id": "research",
@@ -53,8 +68,14 @@
       "skill": "market-researcher",
       "kind": "single",
       "dir": "04-research",
-      "outputs": ["04-research/icp.md"],
-      "dependsOn": ["brand"]
+      "outputs": [
+        "04-research/icp.md"
+      ],
+      "dependsOn": [
+        "brand"
+      ],
+      "prompt": "ابني الـ ICP الكامل من محتوى الكتاب نفسه في {source} (ابدأ بالملف الأساسي {mainFile}).",
+      "budgetUsd": 8
     },
     {
       "id": "bonus",
@@ -63,8 +84,13 @@
       "skill": "bonus-architect",
       "kind": "single",
       "dir": "05-offer",
-      "outputs": ["05-offer/bonus-system.md"],
-      "dependsOn": ["research"]
+      "outputs": [
+        "05-offer/bonus-system.md"
+      ],
+      "dependsOn": [
+        "research"
+      ],
+      "prompt": "ابني منظومة البونصات من الـ Objections Matrix في 04-research/icp.md، واستخدم البونصات الحقيقية الموجودة في {source} لو مناسبة."
     },
     {
       "id": "upsell",
@@ -73,8 +99,13 @@
       "skill": "upsell-downsell-architect",
       "kind": "single",
       "dir": "05-offer",
-      "outputs": ["05-offer/upsell-downsell.md"],
-      "dependsOn": ["research"]
+      "outputs": [
+        "05-offer/upsell-downsell.md"
+      ],
+      "dependsOn": [
+        "research"
+      ],
+      "prompt": "ابني الأبسيل والداونسيل من الـ ICP وbonus-system.md لو موجود."
     },
     {
       "id": "calendar",
@@ -83,8 +114,14 @@
       "skill": "book-launch-planner",
       "kind": "single",
       "dir": "00-calendar",
-      "outputs": ["00-calendar/calendar.md", "00-calendar/calendar.csv"],
-      "dependsOn": ["brand"]
+      "outputs": [
+        "00-calendar/calendar.md",
+        "00-calendar/calendar.csv"
+      ],
+      "dependsOn": [
+        "brand"
+      ],
+      "prompt": "ابني خطة محتوى 30 يوم (calendar.md + calendar.csv) معتمدًا على icp.md لو موجود."
     },
     {
       "id": "copy",
@@ -94,7 +131,12 @@
       "kind": "perDay",
       "dir": "01-copy",
       "match": "file",
-      "dependsOn": ["calendar"]
+      "dependsOn": [
+        "calendar"
+      ],
+      "args": "days",
+      "prompt": "اكتب البوستات للأيام دي من 00-calendar/calendar.csv: {days}. كل يوم في ملف لوحده بالاسم اللي الـ Skill بتحدده (01-copy/week-N/day-N-<وصف>.md).",
+      "budgetUsd": 6
     },
     {
       "id": "visuals",
@@ -104,8 +146,12 @@
       "kind": "perDay",
       "dir": "02-visuals",
       "match": "folder",
-      "dependsOn": ["copy"],
-      "gate": "توليد الصور بيصرف كريدت"
+      "dependsOn": [
+        "copy"
+      ],
+      "gate": "توليد الصور بيصرف كريدت",
+      "args": "days",
+      "prompt": "اعمل الـ design spec وصورة الغلاف للأيام دي: {days}. ابدأ بعيّنة صورة واحدة لكل يوم بالكتير، ولو أداة توليد الصور مش متاحة اكتب الـ spec والـ prompts بس واذكر ده في الملخص."
     },
     {
       "id": "reels",
@@ -114,8 +160,20 @@
       "skill": "whiteboard-reel-producer",
       "kind": "collection",
       "dir": "03-reels",
-      "dependsOn": ["copy"],
-      "gate": "شغل كود يدوي بطيء"
+      "dependsOn": [
+        "copy"
+      ],
+      "gate": "شغل كود يدوي بطيء",
+      "args": "days",
+      "prompt": "اعمل فيديو وايت بورد لريل اليوم/الأيام دي: {days}، وحطه في 03-reels/ حسب الـ Skill.",
+      "extraTools": [
+        "Bash(npx remotion:*)",
+        "Bash(cd whiteboard-video:*)",
+        "Bash(ls:*)",
+        "Bash(mkdir:*)",
+        "Bash(cp:*)"
+      ],
+      "budgetUsd": 10
     },
     {
       "id": "landing",
@@ -124,9 +182,15 @@
       "skill": "landing-page-architect",
       "kind": "single",
       "dir": "06-landing-page",
-      "outputs": ["06-landing-page/landing-page.md"],
-      "dependsOn": ["research", "bonus"],
-      "gate": "بيتعمل لما يبقى في قرار بيع فعلي"
+      "outputs": [
+        "06-landing-page/landing-page.md"
+      ],
+      "dependsOn": [
+        "research",
+        "bonus"
+      ],
+      "gate": "بيتعمل لما يبقى في قرار بيع فعلي",
+      "prompt": "اكتب صفحة البيع الكاملة من icp.md و05-offer/ ومحتوى الكتاب."
     },
     {
       "id": "ads",
@@ -135,9 +199,14 @@
       "skill": "ad-copywriter",
       "kind": "single",
       "dir": "07-ads",
-      "outputs": ["07-ads/ad-copies.md"],
-      "dependsOn": ["research"],
-      "gate": "بيتعمل لما يبقى في قرار بيع فعلي"
+      "outputs": [
+        "07-ads/ad-copies.md"
+      ],
+      "dependsOn": [
+        "research"
+      ],
+      "gate": "بيتعمل لما يبقى في قرار بيع فعلي",
+      "prompt": "اكتب كوبي الإعلانات من icp.md ومحتوى الكتاب."
     },
     {
       "id": "performance",
@@ -146,9 +215,39 @@
       "skill": "performance-creative-strategist",
       "kind": "single",
       "dir": "08-performance-creative",
-      "outputs": ["08-performance-creative/performance-creative-machine.md"],
-      "dependsOn": ["research"],
-      "gate": "بس لو في نية صرف ميديا فعلية"
+      "outputs": [
+        "08-performance-creative/performance-creative-machine.md"
+      ],
+      "dependsOn": [
+        "research"
+      ],
+      "gate": "بس لو في نية صرف ميديا فعلية",
+      "prompt": "ابني نظام الكرييتيف الكامل للميديا باينج من icp.md.",
+      "budgetUsd": 10
     }
-  ]
+  ],
+  "runner": {
+    "$comment": "تشغيل الـ Skills من الداشبورد عبر claude -p (headless). الصلاحيات مقصودة تكون ضيقة: تعديل ملفات بس + أدوات قراءة، وأي Bash لازم يتضاف صريح لكل مرحلة.",
+    "maxConcurrent": 2,
+    "model": null,
+    "budgetUsd": 5,
+    "permissionMode": "acceptEdits",
+    "allowedTools": [
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep",
+      "Skill",
+      "TodoWrite"
+    ],
+    "qaSkill": "content-qa-reviewer",
+    "qaAllowedTools": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Skill"
+    ],
+    "autoQa": true
+  }
 }

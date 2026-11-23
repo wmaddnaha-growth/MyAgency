@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { href, fileUrl, fmtDate, DONE, useLiveVersion, api, type ProductFull, type Stage, type FileInfo, type Day, type Config } from './api';
 import { ProductCtx, StageStatusEditor, Uploader, NewFileButton, MetaEditor, toast } from './Edit';
+import { RunPanel, ProductJobs } from './Jobs';
 import { StatusBadge, FileViewer, FileList, Empty, Progress, STATUS_LABEL, KIND_LABEL } from './ui';
 
 type Props = { p: ProductFull; tab: string; file?: string; config: Config };
@@ -161,6 +162,7 @@ function Overview({ p, go, config }: { p: ProductFull; go: (t: string, f?: strin
         </table>
       </div>
 
+      <ProductJobs slug={p.slug} />
       {partial.length > 0 && (
         <div className="card">
           <h3>مراحل فيها شغل بس مش بالشكل القياسي</h3>
@@ -241,6 +243,7 @@ function StageView({ p, s, file, go }: { p: ProductFull; s: Stage; file?: string
         )}
       </div>
 
+      <RunPanel key={s.id} p={p} s={s} />
       {s.id === 'calendar' && p.calendar && <CalendarTable p={p} go={go} />}
       {s.kind === 'perDay' && <DayBoard p={p} s={s} active={file} go={go} />}
       {s.kind === 'perDay' && dayMode && <DayView p={p} day={Number(file!.slice(4))} onClose={() => open()} go={go} />}
