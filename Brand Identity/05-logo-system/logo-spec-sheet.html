@@ -1,0 +1,35 @@
+<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><title>وَمَدَدْنَاها — Logo system</title>
+<style>body{margin:0;background:#fff;font-family:system-ui,sans-serif;padding:24px;width:1180px;color:#121A31}
+h2{font-size:15px;margin:22px 0 8px;border-bottom:1px solid #ccc;padding-bottom:4px;direction:ltr}
+.g{display:grid;gap:12px}.g4{grid-template-columns:repeat(4,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g5{grid-template-columns:repeat(5,1fr)}
+.t{height:200px;display:flex;align-items:center;justify-content:center;position:relative;border:1px solid #ddd;overflow:hidden}
+.t img{max-width:84%;max-height:150px}.t small{position:absolute;bottom:4px;left:8px;font-size:11px;color:#888;direction:ltr}
+.L{background:#F0EDE5}.D{background:#121A31}.B{background:#1F477E}.W{background:#fff}.P{background:#d9c9b0}
+.cs{position:relative;width:44%}.cs img{width:100%;display:block}.cs:before{content:"";position:absolute;inset:-22% -12%;border:1.5px dashed #c33}
+.bad{color:#c33}.bad .t{height:150px}.x:after{content:"✕";position:absolute;top:4px;right:8px;color:#c33;font-weight:700;font-size:18px}
+.photo{background:linear-gradient(135deg,#6a8b55,#c7a96b 40%,#4a3a2a 70%,#8aa0b8)}
+.av{width:96px;height:96px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin:0 12px}.av img{width:78%}
+</style>
+<h2>1 · Lockups (vertical = primary)</h2>
+<div class="g g4"><div class="t L"><img src="logo-vertical-color-light.svg"><small>Vertical · light</small></div><div class="t D"><img src="logo-vertical-color-dark.svg"><small>Vertical · dark</small></div>
+<div class="t L"><img src="logo-horizontal-color-light.svg"><small>Horizontal · light</small></div><div class="t D"><img src="logo-horizontal-color-dark.svg"><small>Horizontal · dark</small></div></div>
+<h2>2 · Components and one-color versions</h2>
+<div class="g g5"><div class="t L"><img src="icon-color-light.svg"><small>Icon</small></div><div class="t L"><img src="wordmark-color-light.svg"><small>Wordmark</small></div>
+<div class="t W"><img src="logo-vertical-mono-ink.svg"><small>Mono ink</small></div><div class="t B"><img src="logo-vertical-mono-white.svg"><small>Mono white on brand blue</small></div><div class="t P"><img src="logo-vertical-mono-ink.svg"><small>Mono ink on kraft/print</small></div></div>
+<h2>3 · Clear space = height of the wordmark (dashed) · minimum sizes</h2>
+<div class="g g3"><div class="t L"><div class="cs"><img src="logo-vertical-color-light.svg"></div><small>Clear space ≈ 1× wordmark height on all sides</small></div>
+<div class="t L" style="gap:30px;align-items:flex-end;padding-bottom:30px"><div style="text-align:center"><img src="logo-vertical-color-light.svg" style="width:120px"><br><small style="position:static">vertical ≥ 120px / 28mm</small></div><div style="text-align:center"><img src="logo-horizontal-color-light.svg" style="width:150px"><br><small style="position:static">horizontal ≥ 150px / 35mm</small></div></div>
+<div class="t L" style="gap:22px"><span style="text-align:center"><img src="icon-color-light.svg" style="width:64px"><br><small style="position:static">64</small></span><span style="text-align:center"><img src="icon-color-light.svg" style="width:40px"><br><small style="position:static">40</small></span><span style="text-align:center"><img src="icon-color-light.svg" style="width:28px"><br><small style="position:static">28 (min)</small></span><small>Icon min 28px / 8mm. Below 120px wide use the icon alone.</small></div></div>
+<h2>4 · Avatars (icon only, never the full lockup)</h2>
+<div class="g"><div class="t L" style="height:150px"><span class="av" style="background:#F0EDE5;border:1px solid #ddd"><img src="icon-color-light.svg"></span><span class="av" style="background:#121A31"><img src="icon-color-dark.svg"></span><span class="av" style="background:#1F477E"><img src="icon-mono-white.svg"></span><span class="av" style="background:#F0EDE5;width:40px;height:40px;border:1px solid #ddd"><img src="icon-color-light.svg"></span><span class="av" style="background:#121A31;width:28px;height:28px"><img src="icon-color-dark.svg"></span></div></div>
+<h2 class="bad">5 · Incorrect usage</h2>
+<div class="g g5 bad"><div class="t L x"><img src="logo-vertical-color-light.svg" style="transform:scaleX(1.5)"><small>Do not stretch</small></div>
+<div class="t L x"><img src="logo-vertical-color-light.svg" style="filter:hue-rotate(120deg)"><small>Do not recolor</small></div>
+<div class="t L x"><img src="logo-vertical-color-light.svg" style="transform:rotate(-14deg)"><small>Do not rotate</small></div>
+<div class="t L x"><img src="logo-vertical-color-light.svg" style="filter:drop-shadow(4px 6px 3px rgba(0,0,0,.6))"><small>No shadows / bevel / foil effects</small></div>
+<div class="t photo x"><img src="logo-vertical-color-light.svg"><small style="color:#fff">Do not place on busy photos</small></div>
+<div class="t B x"><img src="logo-vertical-color-light.svg"><small style="color:#fff">Blue wordmark on blue: no contrast</small></div>
+<div class="t L x"><img src="icon-color-light.svg" style="width:40%"><img src="wordmark-color-light.svg" style="width:40%;margin-inline-start:-10px"><small>Do not rearrange the lockup</small></div>
+<div class="t L x"><img src="logo-vertical-color-light.svg" style="clip-path:inset(0 0 40% 0)"><small>Do not crop the swoosh</small></div>
+<div class="t D x"><img src="logo-vertical-color-light.svg"><small style="color:#fff">Use the dark version on dark</small></div>
+<div class="t L x"><img src="logo-vertical-color-light.svg" style="width:20%"><small>Too small: switch to icon-only</small></div></div>

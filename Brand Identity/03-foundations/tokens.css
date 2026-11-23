@@ -1,0 +1,46 @@
+:root{
+  --c-master-teal:#0B3F3B;
+  --c-neutral-paper:#FBF7F0;
+  --c-neutral-paper-2:#F4EDE1;
+  --c-neutral-paper-3:#ECE3D3;
+  --c-neutral-ivory:#EFE6D6;
+  --c-neutral-ink:#1A1612;
+  --c-neutral-ink-mute:#5A5246;
+  --c-gold-gold-text:#7E5E24;
+  --c-gold-gold:#9A7432;
+  --c-gold-foil:#B48A36;
+  --c-gold-gold-light:#E3C47A;
+  --c-functional-success:#2E7D4F;
+  --c-functional-warning:#8A5A00;
+  --c-functional-danger:#A8402F;
+  --c-functional-info:#2F5597;
+  --c-product-teal:#0B3F3B;
+  --c-product-maroon:#5A1B2C;
+  --c-product-navy:#1B2D55;
+  --c-product-petrol:#173849;
+  --c-product-rust:#6A2E16;
+  --c-product-forest:#1D4429;
+  --c-product-plum:#3B2150;
+  --c-product-umber:#553705;
+  --c-product-olive:#3F4A1F;
+  --c-product-slate:#2E3B4A;
+  --font-display:"Amiri","Times New Roman",serif;
+  --font-book:"Noto Naskh Arabic",serif;
+  --font-ui:"Readex Pro",system-ui,sans-serif;
+  --font-hand:"Aref Ruqaa","Amiri",serif;
+  --s1:4px;
+  --s2:8px;
+  --s3:12px;
+  --s4:16px;
+  --s6:24px;
+  --s8:32px;
+  --s12:48px;
+  --s16:64px;
+  --s24:96px;
+  --r-sm:4px;
+  --r-md:8px;
+  --r-pill:999px;
+  --sh-card:0 1px 2px rgba(26,22,18,.06), 0 4px 12px rgba(26,22,18,.06);
+  --sh-lift:0 8px 24px rgba(26,22,18,.12);
+  --product:var(--c-master-teal); /* override per product */
+}

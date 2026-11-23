@@ -1,0 +1,10 @@
+node_modules/
+dashboard/web/dist/
+# ميديا تقيلة: مش داخلة git (اتعملها backup منفصل)
+*.mp4
+*.mov
+*.mp3
+*.wav
+whiteboard-video/out/
+00-المرجعية-source-book/
+.DS_Store

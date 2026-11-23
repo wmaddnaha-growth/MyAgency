@@ -1,0 +1,23 @@
+@import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Readex+Pro:wght@400;500;700&display=swap');
+:root{--blue:#1F477E;--navy:#121A31;--cream:#F0EDE5;--gold:#B08E4F;--goldl:#C9A66B;--goldt:#7A5C22;--hue:#0B3F3B}
+*{box-sizing:border-box}body{margin:0;background:#bdb6a8;font-family:'Readex Pro',sans-serif}
+.wrap{display:flex;flex-wrap:wrap;gap:18px;padding:20px;width:1980px}.cell{zoom:.3}.lab{font:700 40px 'Readex Pro';color:#333;margin-bottom:10px;direction:ltr}
+.t{width:1080px;height:1350px;position:relative;padding:84px 76px;direction:rtl;overflow:hidden;display:flex;flex-direction:column}.s{height:1920px}
+.L{background:var(--cream);color:var(--navy)}.D{background:var(--navy);color:var(--cream)}.P{background:var(--hue);color:#fff}.B{background:var(--blue);color:#fff}
+.D:before,.P:before{content:"";position:absolute;inset:34px;border:2px solid color-mix(in srgb,var(--gold) 60%,transparent);pointer-events:none}
+.kick{font:500 34px 'Readex Pro';color:var(--goldt)}.D .kick,.P .kick,.B .kick{color:var(--goldl)}
+.h{font:700 92px/1.4 'Readex Pro';margin:28px 0}.h.am{font-family:Amiri;font-size:104px;line-height:1.45}.sub{font:400 44px/1.7 'Readex Pro';opacity:.92}
+.mid{flex:1;display:flex;flex-direction:column;justify-content:center}.ctr{align-items:center;text-align:center}
+.rule{width:140px;height:3px;background:var(--gold);margin:26px 0}
+.cta{display:inline-block;font:700 46px 'Readex Pro';padding:26px 56px;border-radius:8px;background:var(--blue);color:#fff}.D .cta,.P .cta{background:var(--goldl);color:var(--navy)}
+.sig{width:300px;position:absolute;bottom:64px;inset-inline-start:76px}.sig.c{inset-inline-start:calc(50% - 150px)}
+.step{display:flex;align-items:center;gap:26px;font:700 64px 'Readex Pro';margin:20px 0}.step i{font-style:normal;width:150px;height:150px;border-radius:50%;border:3px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:44px;color:var(--goldt);flex:none;text-align:center;line-height:1.2}
+.arrow{font-size:60px;color:var(--gold);margin:0 0 0 0;text-align:center}
+.price{font:700 190px/1 'Readex Pro'}.price s{font-size:80px;opacity:.6;margin-inline-start:30px}
+.badge{display:inline-block;border:3px solid var(--goldl);color:var(--goldl);padding:14px 30px;border-radius:999px;font:500 38px 'Readex Pro';margin:8px 8px 8px 0}
+.ph{border:3px dashed var(--gold);padding:30px;border-radius:8px;font:400 44px/1.7 'Readex Pro'}
+.mk{position:absolute;width:760px;opacity:.07;inset-inline-end:-160px;bottom:-60px}
+.dots{position:absolute;top:90px;inset-inline-end:76px;font:700 40px 'Readex Pro';color:var(--goldl)}
+.cv{width:1640px;height:924px;zoom:.3;position:relative;background:var(--navy);color:var(--cream);direction:rtl;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.cv h1{font:700 78px/1.5 'Readex Pro';color:var(--goldl);margin:0}.cv p{font:400 54px 'Readex Pro';margin:20px 0 0}
+.hl{display:flex;gap:40px;zoom:.3}.hl div{width:300px;text-align:center;font:500 38px 'Readex Pro';color:#222}.hl b{display:flex;width:300px;height:300px;border-radius:50%;background:var(--navy);border:3px solid var(--gold);align-items:center;justify-content:center;margin-bottom:14px}.hl svg{width:150px;stroke:var(--goldl);fill:none;stroke-width:5}

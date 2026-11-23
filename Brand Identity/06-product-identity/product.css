@@ -1,0 +1,25 @@
+@import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Noto+Naskh+Arabic:wght@400;600&family=Readex+Pro:wght@400;500;700&display=swap');
+:root{--paper:#FBF7F0;--paper2:#F4EDE1;--ink:#1A1612;--mute:#5A5246;--foil:#B48A36;--goldl:#E3C47A;--goldt:#7E5E24;--hue:#0B3F3B;--tint:color-mix(in srgb,var(--hue) 8%,var(--paper))}
+*{box-sizing:border-box}body{margin:0;background:#cfc8bb;font-family:'Noto Naskh Arabic',serif;color:var(--ink)}
+.page{width:559px;height:794px;background:var(--paper);position:relative;overflow:hidden;direction:rtl;flex:none}
+.cover{background:var(--hue);color:#fff;display:flex;flex-direction:column;align-items:center;text-align:center}
+.cover:before{content:"";position:absolute;inset:26px;border:1px solid var(--foil)}.cover:after{content:"";position:absolute;inset:34px;border:1px solid color-mix(in srgb,var(--foil) 55%,transparent)}
+.cover .emb{margin-top:150px;width:92px;height:92px}.cover h1{font:700 52px/1.3 Amiri;margin:46px 40px 0}.cover .rule{width:150px;height:1px;background:var(--foil);margin:30px 0}
+.cover .sub{font:400 20px/1.8 Amiri;color:var(--goldl)}.cover .by{position:absolute;bottom:128px;font:400 14px/1.8 Amiri;color:#e8dfc9}.cover .by b{display:block;color:var(--goldl);font-size:16px}
+.cover .sig{position:absolute;bottom:56px;width:150px}
+.hdr{position:absolute;top:34px;inset-inline:48px;display:flex;justify-content:space-between;font:500 11px 'Readex Pro';color:var(--mute);border-bottom:1px solid var(--foil);padding-bottom:8px}
+.ftr{position:absolute;bottom:30px;inset-inline:0;text-align:center;font:500 12px 'Readex Pro';color:var(--goldt)}.ftr:before{content:"";display:block;width:36px;height:1px;background:var(--foil);margin:0 auto 8px}
+.body{position:absolute;top:82px;inset-inline:56px;bottom:70px;font-size:17px;line-height:1.95}.body p{margin:0 0 10px}
+h3{font:700 22px Amiri;color:var(--hue);margin:14px 0 6px}
+.box{border-radius:4px;padding:12px 16px;margin:14px 0;font-size:15.5px;line-height:1.85}.box b{display:block;font:700 12px 'Readex Pro';letter-spacing:0;margin-bottom:4px}
+.try{background:var(--tint);border-inline-start:4px solid var(--hue)}.try b{color:var(--hue)}
+.story{background:var(--paper2);border-inline-start:4px solid var(--foil);font-family:Amiri;font-size:17px}.story b{color:var(--goldt)}
+.review{background:#fff;border:1px solid var(--hue);position:relative}.review b{color:var(--hue)}.review:before{content:"✓";position:absolute;left:12px;top:8px;color:var(--hue);font:700 14px 'Readex Pro'}
+.sum{background:var(--hue);color:#fff}.sum b{color:var(--goldl)}
+.open .top{background:var(--hue);height:410px;color:#fff;position:relative;padding:56px 56px 0}.open .top:after{content:"";position:absolute;inset:24px;border:1px solid var(--foil);pointer-events:none}
+.open .lab{font:500 13px 'Readex Pro';color:var(--goldl);position:relative;top:34px;text-align:center}.open .num{font:700 120px/1 Amiri;color:var(--foil);text-align:center;margin-top:36px}.open h2{font:700 34px/1.5 Amiri;text-align:center;margin:0 20px}
+.open .q{padding:36px 64px;font-size:17px;line-height:2}.open .q i{font-style:normal;font:700 14px 'Readex Pro';color:var(--goldt);display:block}
+.lines span{display:block;border-bottom:1px solid color-mix(in srgb,var(--ink) 25%,transparent);height:34px}
+.grid30{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin:14px 0}.grid30 div{aspect-ratio:1;border:1.5px solid var(--hue);border-radius:50%;display:flex;align-items:center;justify-content:center;font:500 13px 'Readex Pro';color:var(--hue)}
+.close{background:var(--paper2);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:18px}.close img{width:180px}.close p{font:400 17px/1.9 Amiri;max-width:380px;margin:0}.close small{font:400 12px 'Readex Pro';color:var(--mute)}
+.row{display:flex;gap:18px;padding:24px;align-items:flex-start;width:max-content}

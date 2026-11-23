@@ -1,0 +1,154 @@
+{
+  "$comment": "تعريف خط الإنتاج لكل أنواع المنتجات. الداشبورد بيقرا الملف ده بس — أي Skill/مرحلة/نوع منتج جديد يتضاف هنا من غير تعديل الكود. المسارات كلها نسبية لفولدر الكامبين campaigns/<slug>/.",
+  "version": 1,
+  "paths": {
+    "sources": "Books",
+    "campaigns": "campaigns",
+    "sharedBrand": "Brand Identity",
+    "productFile": "product.json"
+  },
+  "productStatuses": {
+    "planned": "مخطط",
+    "active": "شغال",
+    "paused": "متوقف",
+    "archived": "مؤرشف"
+  },
+  "productTypes": {
+    "ebook": {
+      "label": "كتاب إلكتروني",
+      "stages": ["brand", "research", "bonus", "upsell", "calendar", "copy", "visuals", "reels", "landing", "ads", "performance"]
+    }
+  },
+  "stageStatuses": {
+    "auto": {
+      "missing": "لسه",
+      "partial": "ناقص / ملفات غير قياسية",
+      "done": "موجود",
+      "blocked": "مستني مرحلة قبله"
+    },
+    "manual": {
+      "in-progress": "شغال",
+      "review": "مستني QA",
+      "approved": "معتمد ✅",
+      "needs-fix": "محتاج تعديل ⚠️",
+      "rejected": "محتاج إعادة ❌",
+      "skipped": "مش مطلوب"
+    }
+  },
+  "stages": [
+    {
+      "id": "brand",
+      "label": "هوية المنتج",
+      "group": "الأساس",
+      "skill": "book-brand-assigner",
+      "kind": "single",
+      "dir": "",
+      "outputs": ["brand.md"],
+      "dependsOn": []
+    },
+    {
+      "id": "research",
+      "label": "بحث الجمهور (ICP)",
+      "group": "الأساس",
+      "skill": "market-researcher",
+      "kind": "single",
+      "dir": "04-research",
+      "outputs": ["04-research/icp.md"],
+      "dependsOn": ["brand"]
+    },
+    {
+      "id": "bonus",
+      "label": "البونصات والأوفر",
+      "group": "الأوفر",
+      "skill": "bonus-architect",
+      "kind": "single",
+      "dir": "05-offer",
+      "outputs": ["05-offer/bonus-system.md"],
+      "dependsOn": ["research"]
+    },
+    {
+      "id": "upsell",
+      "label": "أبسيل / داونسيل",
+      "group": "الأوفر",
+      "skill": "upsell-downsell-architect",
+      "kind": "single",
+      "dir": "05-offer",
+      "outputs": ["05-offer/upsell-downsell.md"],
+      "dependsOn": ["research"]
+    },
+    {
+      "id": "calendar",
+      "label": "خطة المحتوى",
+      "group": "المحتوى العضوي",
+      "skill": "book-launch-planner",
+      "kind": "single",
+      "dir": "00-calendar",
+      "outputs": ["00-calendar/calendar.md", "00-calendar/calendar.csv"],
+      "dependsOn": ["brand"]
+    },
+    {
+      "id": "copy",
+      "label": "البوستات المكتوبة",
+      "group": "المحتوى العضوي",
+      "skill": "book-launch-writer",
+      "kind": "perDay",
+      "dir": "01-copy",
+      "match": "file",
+      "dependsOn": ["calendar"]
+    },
+    {
+      "id": "visuals",
+      "label": "التصاميم والصور",
+      "group": "المحتوى العضوي",
+      "skill": "book-launch-visual-producer",
+      "kind": "perDay",
+      "dir": "02-visuals",
+      "match": "folder",
+      "dependsOn": ["copy"],
+      "gate": "توليد الصور بيصرف كريدت"
+    },
+    {
+      "id": "reels",
+      "label": "الريلز (وايت بورد)",
+      "group": "المحتوى العضوي",
+      "skill": "whiteboard-reel-producer",
+      "kind": "collection",
+      "dir": "03-reels",
+      "dependsOn": ["copy"],
+      "gate": "شغل كود يدوي بطيء"
+    },
+    {
+      "id": "landing",
+      "label": "اللاندنج بيدج",
+      "group": "البيع",
+      "skill": "landing-page-architect",
+      "kind": "single",
+      "dir": "06-landing-page",
+      "outputs": ["06-landing-page/landing-page.md"],
+      "dependsOn": ["research", "bonus"],
+      "gate": "بيتعمل لما يبقى في قرار بيع فعلي"
+    },
+    {
+      "id": "ads",
+      "label": "كوبي الإعلانات",
+      "group": "البيع",
+      "skill": "ad-copywriter",
+      "kind": "single",
+      "dir": "07-ads",
+      "outputs": ["07-ads/ad-copies.md"],
+      "dependsOn": ["research"],
+      "gate": "بيتعمل لما يبقى في قرار بيع فعلي"
+    },
+    {
+      "id": "performance",
+      "label": "كرييتيف الميديا باينج",
+      "group": "البيع",
+      "skill": "performance-creative-strategist",
+      "kind": "single",
+      "dir": "08-performance-creative",
+      "outputs": ["08-performance-creative/performance-creative-machine.md"],
+      "dependsOn": ["research"],
+      "gate": "بس لو في نية صرف ميديا فعلية"
+    }
+  ]
+}
